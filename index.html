@@ -284,14 +284,31 @@
 </div>
 
 <div id="context-menu">
-    <div onclick="openEditModal()">Edit Information</div>
-    <div onclick="setDesktopOutlookReminder()" style="color: #0078d4; font-weight: 800;">🔔 Keep Reminder (Outlook)</div>
-    <div id="pin-perm-btn" onclick="openPinModal()">Pin as Permanent</div>
-    <div id="unpin-perm-btn" onclick="togglePermanent(false)">Unpin as Permanent</div>
-    <div id="remove-today-btn" onclick="removeTodayOnly()">Remove Today Only</div>
-    <div onclick="deleteBooking()" style="color:red;">Delete Booking</div>
+    <button onclick="openEditModal()">Edit Booking</button>
+    <button onclick="openHistoryModal()">View History</button>
+    <button onclick="setDesktopOutlookReminder()">Add to Outlook</button>
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 5px 0;">
+    <button onclick="deleteBooking()" style="color: #e74c3c;">Delete Booking</button>
+    
+    <button id="pin-perm-btn" onclick="openPinModal()" style="display:none;">Pin to Every Week</button>
+    <button id="unpin-perm-btn" onclick="togglePermanent(false)" style="display:none;">Unpin (Stop Repeating)</button>
+    <button id="remove-today-btn" onclick="removeTodayOnly()" style="display:none;">Remove for Today Only</button>
 </div>
-
+<div id="historyModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width: 500px; border-top: 5px solid var(--al-anees-blue);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">📜</span> Activity Log
+            </h2>
+            <button onclick="closeModals()" style="background:none; border:none; cursor:pointer; font-size:20px;">&times;</button>
+        </div>
+        <div id="historyContent" style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+            </div>
+        <div style="margin-top: 20px; text-align: right;">
+            <button class="btn-primary" onclick="closeModals()">Close</button>
+        </div>
+    </div>
+</div>
 <script>
     const adminEmail = "sajidhhameed1401@gmail.com";
     let generatedOTP = "";
@@ -392,7 +409,6 @@
     let sel = null;
     let selectedDays = [];
 
-    // YOUR UPDATED CREDENTIALS
     const SUPABASE_URL = 'https://msfmqqtlxzuudrsypdak.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_zR1fAyjSofxeXbnDx6d0AA_gGQY9eL8';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -483,92 +499,130 @@
         });
     }
 
-    // --- PINNING LOGIC ---
-    function openPinModal() {
-        selectedDays = [];
-        const gridBox = document.getElementById('dayPickerGrid');
-        gridBox.innerHTML = '';
+    // --- HISTORY MODAL LOGIC ---
+    async function openHistoryModal() {
+        const historyBox = document.getElementById('historyContent');
+        const historyModal = document.getElementById('historyModal');
         
-        dayNames.forEach(day => {
-            const div = document.createElement('div');
-            div.innerText = day;
-            div.style = "padding:10px; border:1px solid rgba(0,0,0,0.1); border-radius:10px; cursor:pointer; text-align:center; font-size:12px; font-weight:600; background:white;";
-            
-            div.onclick = () => {
-                if (div.classList.toggle('selected')) {
-                    div.style.background = 'var(--al-anees-blue)';
-                    div.style.color = 'white';
-                    selectedDays.push(day);
-                } else {
-                    div.style.background = 'white';
-                    div.style.color = 'black';
-                    selectedDays = selectedDays.filter(d => d !== day);
-                }
-            };
-            gridBox.appendChild(div);
-        });
-
-        pinModal.style.display = 'flex'; 
-        setTimeout(() => pinModal.classList.add('active'), 10);
+        historyBox.innerHTML = "Fetching log records...";
+        historyModal.style.display = 'flex';
+        setTimeout(() => historyModal.classList.add('active'), 10);
         menu.style.display = 'none';
-    }
 
-    function selectAllDays() {
-        selectedDays = [...dayNames];
-        const buttons = document.querySelectorAll('#dayPickerGrid div');
-        buttons.forEach(b => {
-            b.classList.add('selected');
-            b.style.background = 'var(--al-anees-blue)';
-            b.style.color = 'white';
-        });
-    }
+        const { data, error } = await _supabase
+            .from('meeting_history')
+            .select('*')
+            .eq('slot_id', sel.time)
+            .eq('slot_date', datePicker.value)
+            .order('created_at', { ascending: false });
 
-    async function confirmPin() {
-        if(selectedDays.length === 0) return alert("Select at least one day");
-        const roomName = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
-        
-        const pinData = selectedDays.map(day => ({
-            day_name: day,
-            time_slot: sel.time,
-            room_name: roomName,
-            booked_by: sel.data.name,
-            agenda: sel.data.agenda,
-            notes: sel.data.notes || "",
-            email: sel.data.email || ""
-        }));
-
-        const { error } = await _supabase.from('permanent_meetings').insert(pinData);
-        
         if (error) {
-            alert("Error pinning: " + error.message);
+            historyBox.innerHTML = "Error: " + error.message;
+        } else if (data.length === 0) {
+            historyBox.innerHTML = "No history found for this slot.";
         } else {
-            if(!sel.isPerm) {
-                await _supabase.from('meetings').delete().eq('id', sel.id);
+            historyBox.innerHTML = data.map(log => {
+                const actionColor = log.action_type === 'DELETED' ? '#ff4d4d' : '#2ecc71';
+                const actionLabel = log.action_type === 'DELETED' ? 'DELETED' : 'CREATED';
+                const timestamp = new Date(log.created_at).toLocaleString();
+
+                return `
+                    <div style="border-left: 4px solid ${actionColor}; background: #f9f9f9; margin-bottom: 10px; padding: 10px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #888;">
+                            <strong style="color: ${actionColor};">${actionLabel}</strong>
+                            <span>${timestamp}</span>
+                        </div>
+                        <div style="font-weight: 600; margin: 4px 0;">${log.user_name}</div>
+                        <div style="font-size: 12px; color: #666;">Email: ${log.user_email}</div>
+                        <div style="font-size: 12px; margin-top: 4px; padding: 4px; background: #fff; border: 1px solid #eee;">
+                            Reason: ${log.reason || 'N/A'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
+    // --- BOOKING LOGIC ---
+    async function confirmBooking() {
+        const title = document.getElementById('inputName').value;
+        const email = document.getElementById('inputEmail').value;
+        const agenda = document.getElementById('inputAgenda').value;
+        const notes = document.getElementById('inputNotes').value;
+
+        if(!title || !agenda) return alert("Fill Name and Agenda");
+
+        const roomName = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
+        let result;
+
+        if (sel.mode === 'new') {
+            result = await _supabase.from('meetings').insert([{
+                date: datePicker.value,
+                time_slot: sel.time,
+                room_name: roomName,
+                booked_by: title,
+                agenda: agenda,
+                notes: notes,
+                email: email
+            }]);
+            
+            if (!result.error) {
+                await _supabase.from('meeting_history').insert([{
+                    slot_id: sel.time,
+                    slot_date: datePicker.value,
+                    action_type: 'CREATED',
+                    user_name: title,
+                    user_email: email,
+                    reason: 'Initial Booking'
+                }]);
             }
-            closeModals(); 
+        } else {
+            result = await _supabase.from('meetings').update({
+                booked_by: title,
+                agenda: agenda,
+                notes: notes,
+                email: email
+            }).eq('id', sel.id);
+        }
+
+        if (result.error) {
+            alert("Cloud Error: " + result.error.message);
+        } else {
+            closeModals();
             loadDate();
         }
     }
 
-    async function togglePermanent(status) {
-        if(!status) { // Unpin
-            if(confirm("Unpin this meeting? It will no longer repeat every week.")) {
-                const { error } = await _supabase.from('permanent_meetings').delete().eq('id', sel.id);
-                if(error) alert(error.message);
-                else loadDate();
-            }
+    async function deleteBooking() { 
+        const name = prompt("Your Name (required to delete):");
+        const email = prompt("Your Email (required to delete):");
+        const reason = prompt("Reason for deletion:");
+
+        if (!name || !email || !reason) {
+            alert("Identification and reason are required to delete.");
+            return;
         }
-        menu.style.display = 'none';
+
+        if(confirm("Delete this booking? This will be logged in history.")) { 
+            const table = sel.isPerm ? 'permanent_meetings' : 'meetings';
+            
+            await _supabase.from('meeting_history').insert([{
+                slot_id: sel.time,
+                slot_date: datePicker.value,
+                action_type: 'DELETED',
+                user_name: name,
+                user_email: email,
+                reason: reason
+            }]);
+
+            const { error } = await _supabase.from(table).delete().eq('id', sel.id);
+            if (error) alert("Error deleting: " + error.message);
+            else loadDate();
+            menu.style.display = 'none';
+        } 
     }
 
-    async function removeTodayOnly() {
-        if(confirm("Remove this repeating meeting for TODAY ONLY?")) {
-            const roomName = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
-            alert("Feature: In this version, please delete from Permanent table to remove.");
-        }
-        menu.style.display = 'none';
-    }
-
+    // --- MODAL CONTROLS ---
     function openBookingModal(time, roomIdx) {
         sel = { time, roomIdx, mode: 'new' };
         document.getElementById('modalTitle').innerText = "New Booking";
@@ -592,60 +646,19 @@
         menu.style.display = 'none';
     }
 
-    async function confirmBooking() {
-        const title = document.getElementById('inputName').value;
-        const agenda = document.getElementById('inputAgenda').value;
-        const notes = document.getElementById('inputNotes').value;
-        
-        // New Accountability Fields
-        const name = prompt("Enter your Name:");
-        const email = prompt("Enter your Email:");
-
-        if(!title || !agenda || !name || !email) return alert("Fill Name, Agenda, and your identification details.");
-
-        const roomName = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
-        let result;
-
-        if (sel.mode === 'new') {
-            result = await _supabase.from('meetings').insert([{
-                date: datePicker.value,
-                time_slot: sel.time,
-                room_name: roomName,
-                booked_by: title,
-                agenda: agenda,
-                notes: notes,
-                email: email,
-                created_by_name: name,
-                created_by_email: email
-            }]);
-            
-            if (!result.error) {
-                await _supabase.from('meeting_history').insert([{
-                    slot_id: sel.time,
-                    slot_date: datePicker.value,
-                    action_type: 'CREATED',
-                    user_name: name,
-                    user_email: email,
-                    reason: 'Initial Booking'
-                }]);
-            }
-        } else {
-            result = await _supabase.from('meetings').update({
-                booked_by: title,
-                agenda: agenda,
-                notes: notes,
-                email: email
-            }).eq('id', sel.id);
-        }
-
-        if (result.error) {
-            alert("Cloud Error: " + result.error.message);
-        } else {
-            closeModals();
-            loadDate();
-        }
+    function closeModals() { 
+        bookingModal.classList.remove('active');
+        pinModal.classList.remove('active');
+        const hist = document.getElementById('historyModal');
+        if(hist) hist.classList.remove('active');
+        setTimeout(() => {
+            bookingModal.style.display = 'none'; 
+            pinModal.style.display = 'none';
+            if(hist) hist.style.display = 'none';
+        }, 300);
     }
 
+    // Helper functions for pinning and reminders remain the same
     function setDesktopOutlookReminder() {
         if (!sel || !sel.data) return;
         const room = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
@@ -665,45 +678,6 @@
         menu.style.display = 'none';
     }
 
-    function closeModals() { 
-        bookingModal.classList.remove('active');
-        pinModal.classList.remove('active');
-        setTimeout(() => {
-            bookingModal.style.display = 'none'; 
-            pinModal.style.display = 'none';
-        }, 300);
-    }
-    
-    async function deleteBooking() { 
-        const name = prompt("Your Name (required to delete):");
-        const email = prompt("Your Email (required to delete):");
-        const reason = prompt("Reason for deletion:");
-
-        if (!name || !email || !reason) {
-            alert("You must provide your name, email, and a reason to delete a booking.");
-            return;
-        }
-
-        if(confirm("Delete this booking? This will be logged in history.")) { 
-            const table = sel.isPerm ? 'permanent_meetings' : 'meetings';
-            
-            // Log to history first
-            await _supabase.from('meeting_history').insert([{
-                slot_id: sel.time,
-                slot_date: datePicker.value,
-                action_type: 'DELETED',
-                user_name: name,
-                user_email: email,
-                reason: reason
-            }]);
-
-            const { error } = await _supabase.from(table).delete().eq('id', sel.id);
-            if (error) alert("Error deleting: " + error.message);
-            else loadDate();
-            menu.style.display = 'none';
-        } 
-    }
-    
     window.onclick = (e) => { 
         menu.style.display = 'none'; 
         if(e.target.classList.contains('modal-overlay')) closeModals(); 
