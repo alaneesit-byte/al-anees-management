@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AL ANEES - Meeting Management</title>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <style>
+        /* Custom Styling for the Digital Background Effect */
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f172a;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .watermark {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            opacity: 0.1;
+            font-size: 3rem;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Login & OTP Styles */
+        #login-container {
+            margin-top: 100px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .otp-input-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .otp-digit {
+            width: 45px;
+            height: 55px;
+            font-size: 24px;
+            text-align: center;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: #38bdf8;
+        }
+
+        /* App Logic Layout (Hidden by default) */
+        #app-content { display: none; width: 90%; max-width: 1200px; padding: 20px; }
+        
+        button {
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="watermark">AL ANEES</div>
+
+    <div id="login-container">
+        <h2>Meeting Access</h2>
+        <div id="user-info-step">
+            <input type="text" id="userName" placeholder="Full Name" style="width: 80%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: none;"><br>
+            <input type="email" id="userEmail" placeholder="Email Address" style="width: 80%; padding: 10px; margin-bottom: 20px; border-radius: 5px; border: none;"><br>
+            <button onclick="sendOTP()">Request PIN</button>
+        </div>
+
+        <div id="otp-step" style="display: none;">
+            <p>Enter the PIN sent to your email</p>
+            <div class="otp-input-group">
+                <input type="text" class="otp-digit" maxlength="1" onkeyup="moveFocus(this, 'd2')">
+                <input type="text" id="d2" class="otp-digit" maxlength="1" onkeyup="moveFocus(this, 'd3')">
+                <input type="text" id="d3" class="otp-digit" maxlength="1" onkeyup="moveFocus(this, 'd4')">
+                <input type="text" id="d4" class="otp-digit" maxlength="1" onkeyup="verifyOTP()">
+            </div>
+        </div>
+    </div>
+
+    <div id="app-content">
+        <h1>Meeting Management Dashboard</h1>
+        <div id="meeting-grid">
+            </div>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        (function() {
+            emailjs.init("YOUR_PUBLIC_KEY"); // Update this with your EmailJS key
+        })();
+
+        let generatedOTP = "";
+
+        function moveFocus(current, nextId) {
+            if (current.value.length >= 1) {
+                document.getElementById(nextId).focus();
+            }
+        }
+
+        function sendOTP() {
+            const name = document.getElementById('userName').value;
+            const email = document.getElementById('userEmail').value;
+
+            if(!name || !email) {
+                alert("Please provide both name and email.");
+                return;
+            }
+
+            generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+            
+            // EmailJS Integration
+            const templateParams = {
+                to_name: name,
+                to_email: email,
+                otp_code: generatedOTP
+            };
+
+            emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
+                .then(() => {
+                    document.getElementById('user-info-step').style.display = 'none';
+                    document.getElementById('otp-step').style.display = 'block';
+                }, (error) => {
+                    alert("Failed to send PIN. Check your connection.");
+                });
+        }
+
+        function verifyOTP() {
+            const digits = document.querySelectorAll('.otp-digit');
+            let enteredCode = "";
+            digits.forEach(d => enteredCode += d.value);
+
+            if (enteredCode === generatedOTP) {
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('app-content').style.display = 'block';
+                // Initialize meeting grid logic here
+            } else if (enteredCode.length === 4) {
+                alert("Incorrect PIN. Please try again.");
+                digits.forEach(d => d.value = "");
+                digits[0].focus();
+            }
+        }
+
+        function logout() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>
