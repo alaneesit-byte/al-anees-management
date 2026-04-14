@@ -321,7 +321,7 @@
     let generatedOTP = "";
     (function(){ emailjs.init("QcTjWCsESbgBj43VZ"); })();
 
-    // --- LOGIN LOGIC ---
+    // --- 1. LOGIN & OTP LOGIC ---
     function showOTP() {
         document.getElementById('standard-login-fields').style.display = 'none';
         document.getElementById('otp-section').style.display = 'block';
@@ -332,22 +332,38 @@
         const userName = document.getElementById('otp_userName').value;
         const userEmail = document.getElementById('otp_userEmail').value;
         const btn = document.getElementById('sendOtpBtn');
-        if (!userName || !userEmail) return alert("Enter Name and Email.");
-        btn.innerText = "SENDING..."; btn.disabled = true;
+        if (!userName || !userEmail) return alert("Please enter your Name and Email first.");
+
+        btn.innerText = "SENDING...";
+        btn.disabled = true;
         generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+        
         emailjs.send('service_nvgioq5', 'template_yjywnjc', {
-            email: adminEmail, from_name: userName, from_email: userEmail, otp_code: generatedOTP
+            email: adminEmail,
+            from_name: userName,
+            from_email: userEmail,
+            otp_code: generatedOTP
         }).then(() => {
-            alert("OTP Sent!");
+            alert("OTP Code Sent!");
             document.getElementById('otp-request-fields').style.display = 'none';
             document.getElementById('otp-inputs').style.display = 'block';
         });
     }
 
     function verifyOTP() {
-        const entered = ['o1','o2','o3','o4'].map(id => document.getElementById(id).value).join('');
-        if (entered === generatedOTP && generatedOTP !== "") { enterSystem(); }
-        else { alert("Invalid OTP"); }
+        const enteredOTP = ['o1','o2','o3','o4'].map(id => document.getElementById(id).value).join('');
+        if (enteredOTP === generatedOTP && generatedOTP !== "") {
+            enterSystem();
+        } else {
+            alert("Invalid OTP.");
+        }
+    }
+
+    function checkLogin() {
+        const id = document.getElementById('empID').value;
+        const pass = document.getElementById('empPass').value;
+        if(id === "admin" && pass === "anees1992") enterSystem();
+        else document.getElementById('login-err').style.display = 'block';
     }
 
     function enterSystem() {
@@ -356,9 +372,11 @@
         loadDate();
     }
 
-    // --- DATABASE & CORE ---
+    // --- 2. SYSTEM CORE & DATABASE ---
     const grid = document.getElementById('gridBody');
     const menu = document.getElementById('context-menu');
+    const bookingModal = document.getElementById('bookingModal');
+    const pinModal = document.getElementById('pinModal');
     const datePicker = document.getElementById('datePicker');
     const dayDisplay = document.getElementById('dayDisplay');
     const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -394,8 +412,10 @@
                 const perm = permRes.data?.find(b => b.time_slot === time && b.room_name === room);
                 const live = liveRes.data?.find(b => b.time_slot === time && b.room_name === room);
                 const data = perm || live;
+                
                 const td = document.createElement('td');
                 const slot = document.createElement('div');
+                
                 if(data) {
                     slot.className = perm ? "slot permanent" : "slot booked";
                     slot.innerHTML = `<b>${data.booked_by}</b><div style="font-size:10px;">${data.agenda}</div>`;
@@ -416,29 +436,45 @@
         });
     }
 
-    // --- PERMANENT PINNING LOGIC ---
+    // --- 3. PERMANENT PINNING LOGIC ---
+    function openPinModal() {
+        document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('active'));
+        pinModal.style.display = 'flex';
+        setTimeout(() => pinModal.classList.add('active'), 10);
+        menu.style.display = 'none';
+    }
+
+    function toggleDay(chip) {
+        chip.classList.toggle('active');
+    }
+
     async function confirmPin() {
         const days = Array.from(document.querySelectorAll('.day-chip.active')).map(c => c.dataset.day);
         if(days.length === 0) return alert("Select at least one day");
         
         const roomName = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
         const pinData = days.map(day => ({
-            day_name: day, time_slot: sel.time, room_name: roomName,
-            booked_by: sel.data.name, agenda: sel.data.agenda, notes: sel.data.notes || "", email: sel.data.email || ""
+            day_name: day,
+            time_slot: sel.time,
+            room_name: roomName,
+            booked_by: sel.data.name,
+            agenda: sel.data.agenda,
+            notes: sel.data.notes || "",
+            email: sel.data.email || ""
         }));
 
         const { error } = await _supabase.from('permanent_meetings').insert(pinData);
         if (!error) {
             await _supabase.from('meeting_history').insert([{
-                slot_id: sel.time, slot_date: datePicker.value, action_type: 'PINNED PERMANENT',
-                user_name: sel.data.name, user_email: sel.data.email, reason: 'Moved to Permanent'
+                slot_id: sel.time, slot_date: datePicker.value, action_type: 'PINNED AS PERMANENT',
+                user_name: sel.data.name, user_email: sel.data.email, reason: 'Meeting set as permanent for: ' + days.join(', ')
             }]);
             if(!sel.isPerm) await _supabase.from('meetings').delete().eq('id', sel.id);
             closeModals(); loadDate();
-        } else alert(error.message);
+        } else alert("Error: " + error.message);
     }
 
-    // --- HISTORY & DELETE ---
+    // --- 4. HISTORY, EDIT, & DELETE ---
     async function openHistoryModal() {
         const box = document.getElementById('historyContent');
         box.innerHTML = "Loading...";
@@ -449,9 +485,9 @@
         const { data } = await _supabase.from('meeting_history')
             .select('*').eq('slot_id', sel.time).eq('slot_date', datePicker.value).order('created_at', {ascending:false});
 
-        if(!data || data.length === 0) box.innerHTML = "No history.";
+        if(!data || data.length === 0) box.innerHTML = "<p style='text-align:center; padding:20px;'>No history for this slot.</p>";
         else box.innerHTML = data.map(log => `
-            <div style="border-left:5px solid ${log.action_type==='DELETED'?'#ff4d4d':'#2ecc71'}; background:#fff; padding:15px; margin-bottom:10px; border-radius:8px; border:1px solid #eee;">
+            <div style="border-left:5px solid ${log.action_type.includes('DELETED')?'#ff4d4d':'#2ecc71'}; background:#fff; padding:15px; margin-bottom:10px; border-radius:8px; border:1px solid #eee;">
                 <div style="display:flex; justify-content:space-between; font-size:11px; color:#999;">
                     <b>${log.action_type}</b> <span>${new Date(log.created_at).toLocaleString()}</span>
                 </div>
@@ -461,8 +497,8 @@
 
     async function deleteBooking() {
         const n = prompt("Name:"), e = prompt("Email:"), r = prompt("Reason:");
-        if(!n || !e || !r) return alert("Fields required.");
-        if(confirm("Delete?")) {
+        if(!n || !e || !r) return alert("All fields required.");
+        if(confirm("Delete this booking?")) {
             await _supabase.from('meeting_history').insert([{
                 slot_id: sel.time, slot_date: datePicker.value, action_type: 'DELETED',
                 user_name: n, user_email: e, reason: r
