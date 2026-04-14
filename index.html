@@ -564,8 +564,6 @@
     async function removeTodayOnly() {
         if(confirm("Remove this repeating meeting for TODAY ONLY?")) {
             const roomName = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
-            // We "block" it for today by adding a placeholder entry in meetings table (optional logic)
-            // For now, simpler to just delete the permanent entry or ignore.
             alert("Feature: In this version, please delete from Permanent table to remove.");
         }
         menu.style.display = 'none';
@@ -595,12 +593,15 @@
     }
 
     async function confirmBooking() {
-        const name = document.getElementById('inputName').value;
-        const email = document.getElementById('inputEmail').value;
+        const title = document.getElementById('inputName').value;
         const agenda = document.getElementById('inputAgenda').value;
         const notes = document.getElementById('inputNotes').value;
+        
+        // New Accountability Fields
+        const name = prompt("Enter your Name:");
+        const email = prompt("Enter your Email:");
 
-        if(!name || !agenda) return alert("Fill Name and Agenda");
+        if(!title || !agenda || !name || !email) return alert("Fill Name, Agenda, and your identification details.");
 
         const roomName = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
         let result;
@@ -610,14 +611,27 @@
                 date: datePicker.value,
                 time_slot: sel.time,
                 room_name: roomName,
-                booked_by: name,
+                booked_by: title,
                 agenda: agenda,
                 notes: notes,
-                email: email
+                email: email,
+                created_by_name: name,
+                created_by_email: email
             }]);
+            
+            if (!result.error) {
+                await _supabase.from('meeting_history').insert([{
+                    slot_id: sel.time,
+                    slot_date: datePicker.value,
+                    action_type: 'CREATED',
+                    user_name: name,
+                    user_email: email,
+                    reason: 'Initial Booking'
+                }]);
+            }
         } else {
             result = await _supabase.from('meetings').update({
-                booked_by: name,
+                booked_by: title,
                 agenda: agenda,
                 notes: notes,
                 email: email
@@ -661,8 +675,28 @@
     }
     
     async function deleteBooking() { 
-        if(confirm("Delete?")) { 
+        const name = prompt("Your Name (required to delete):");
+        const email = prompt("Your Email (required to delete):");
+        const reason = prompt("Reason for deletion:");
+
+        if (!name || !email || !reason) {
+            alert("You must provide your name, email, and a reason to delete a booking.");
+            return;
+        }
+
+        if(confirm("Delete this booking? This will be logged in history.")) { 
             const table = sel.isPerm ? 'permanent_meetings' : 'meetings';
+            
+            // Log to history first
+            await _supabase.from('meeting_history').insert([{
+                slot_id: sel.time,
+                slot_date: datePicker.value,
+                action_type: 'DELETED',
+                user_name: name,
+                user_email: email,
+                reason: reason
+            }]);
+
             const { error } = await _supabase.from(table).delete().eq('id', sel.id);
             if (error) alert("Error deleting: " + error.message);
             else loadDate();
