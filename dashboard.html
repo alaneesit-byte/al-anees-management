@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AL ANEES - Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: white;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .meeting-card {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+        }
+        .btn-logout {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .watermark {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 2rem;
+            opacity: 0.05;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="watermark">AL ANEES</div>
+
+    <div class="header">
+        <h1>Meeting Management</h1>
+        <button class="btn-logout" onclick="window.location.href='index.html'">Logout</button>
+    </div>
+
+    <div class="grid-container">
+        <div class="meeting-card">
+            <h3>Meeting Room 1</h3>
+            <p>Status: Available</p>
+            <button style="background: #38bdf8; border: none; padding: 5px 10px; border-radius: 4px;">Book Now</button>
+        </div>
+    </div>
+
+</body>
+</html>
