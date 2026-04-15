@@ -553,22 +553,23 @@ function updateDateDisplay() {
         });
     }
    async function confirmBooking() {
-    // 1. Get the date directly from the element to ensure it's not empty
+    // 1. Get the values from the input fields
+    const name = document.getElementById('inputName').value.trim();
+    const email = document.getElementById('inputEmail').value.trim();
+    const agenda = document.getElementById('inputAgenda').value.trim();
+    const notes = document.getElementById('inputNotes').value.trim(); // Notes is optional
     const selectedDate = document.getElementById('datePicker').value;
-    
-    const name = document.getElementById('inputName').value;
-    const email = document.getElementById('inputEmail').value;
-    const agenda = document.getElementById('inputAgenda').value;
-    const notes = document.getElementById('inputNotes').value;
 
-    // 2. Add a check to stop the error before it hits the database
-    if (!selectedDate) {
-        alert("Please select a date on the calendar first.");
-        return;
+    // 2. THE VALIDATION CHECK
+    // This stops the code if Name, Email, or Agenda are empty
+    if (!name || !email || !agenda) {
+        alert("Please fill in Name, Email, and Agenda. Only 'Notes' can be left blank.");
+        return; // This "return" stops the function from saving anything
     }
 
+    // 3. Proceed with saving to Supabase only if the check passed
     const { error } = await _supabase.from('meetings').insert([{
-        date: selectedDate, // Use the variable we just grabbed
+        date: selectedDate,
         time_slot: sel.time,
         room_name: sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)",
         booked_by: name,
@@ -578,9 +579,9 @@ function updateDateDisplay() {
     }]);
 
     if (!error) {
-        // ... (rest of your history logging code)
+        alert("Booking Successful!");
         closeModals();
-        loadDate(); 
+        loadDate();
     } else {
         alert("Error saving: " + error.message);
     }
