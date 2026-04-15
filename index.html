@@ -441,25 +441,47 @@
         });
     }
 
-    // --- 3. PERMANENT PINNING LOGIC ---
+    // --- 3. PERMANENT PINNING LOGIC (FIXED) ---
     function openPinModal() {
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const grid = document.getElementById('dayPickerGrid');
-    
-    // This clears the grid and adds the clickable day buttons
-    grid.innerHTML = dayNames.map(day => `
-        <div class="day-chip" 
-             onclick="this.classList.toggle('active')" 
-             data-day="${day}"
-             style="padding: 10px; border: 1px solid #ddd; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s;">
-            ${day}
-        </div>
-    `).join('');
+        const shortDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const grid = document.getElementById('dayPickerGrid');
+        
+        grid.innerHTML = shortDays.map(day => `
+            <div class="day-chip" 
+                 onclick="toggleDayChip(this)" 
+                 data-day="${day}"
+                 style="padding: 10px; border: 1px solid #ddd; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s; font-weight: bold; background: white;">
+                ${day}
+            </div>
+        `).join('');
 
-    // Show the modal
-    const pinModal = document.getElementById('pinModal');
-    pinModal.style.display = 'flex';
-}
+        pinModal.style.display = 'flex';
+        setTimeout(() => pinModal.classList.add('active'), 10);
+        menu.style.display = 'none';
+    }
+
+    function toggleDayChip(chip) {
+        const isActive = chip.classList.toggle('active');
+        if (isActive) {
+            chip.style.backgroundColor = '#1a63ac';
+            chip.style.color = 'white';
+            chip.style.borderColor = '#1a63ac';
+        } else {
+            chip.style.backgroundColor = 'white';
+            chip.style.color = 'black';
+            chip.style.borderColor = '#ddd';
+        }
+    }
+
+    function selectAllDays() {
+        const chips = document.querySelectorAll('.day-chip');
+        chips.forEach(chip => {
+            if (!chip.classList.contains('active')) {
+                toggleDayChip(chip);
+            }
+        });
+    }
+
     async function confirmPin() {
         const days = Array.from(document.querySelectorAll('.day-chip.active')).map(c => c.dataset.day);
         if(days.length === 0) return alert("Select at least one day");
@@ -478,8 +500,12 @@
         const { error } = await _supabase.from('permanent_meetings').insert(pinData);
         if (!error) {
             await _supabase.from('meeting_history').insert([{
-                slot_id: sel.time, slot_date: datePicker.value, action_type: 'PINNED AS PERMANENT',
-                user_name: sel.data.name, user_email: sel.data.email, reason: 'Meeting set as permanent for: ' + days.join(', ')
+                slot_id: sel.time, 
+                slot_date: datePicker.value, 
+                action_type: 'PINNED AS PERMANENT',
+                user_name: sel.data.name, 
+                user_email: sel.data.email, 
+                reason: 'Permanent booking for: ' + days.join(', ')
             }]);
             if(!sel.isPerm) await _supabase.from('meetings').delete().eq('id', sel.id);
             closeModals(); loadDate();
@@ -525,28 +551,24 @@
         document.getElementById('bookingModal').style.display = 'flex';
         setTimeout(() => document.getElementById('bookingModal').classList.add('active'), 10);
     }
-    // Ensure this runs when the page first opens
-window.onload = function() {
-    const today = new Date().toISOString().split('T')[0];
-    const dp = document.getElementById('datePicker');
-    
-    if (dp) {
-        dp.value = today; // This sets the date automatically
-        updateDateDisplay(); // This fixes the "undefined" text in the header
-        loadDate(); // This loads the blue/available slots
-    }
-};
 
-function updateDateDisplay() {
-    const dp = document.getElementById('datePicker');
-    const display = document.getElementById('dateDisplay'); // The span showing "undefined"
-    if (dp && display) {
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const dateObj = new Date(dp.value);
-        display.innerText = dateObj.toLocaleDateString('en-US', options);
+    window.onload = function() {
+        const today = new Date().toISOString().split('T')[0];
+        if (datePicker) {
+            datePicker.value = today;
+            updateDateDisplay();
+            loadDate();
+        }
+    };
+
+    function updateDateDisplay() {
+        if (datePicker && dayDisplay) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateObj = new Date(datePicker.value);
+            dayDisplay.innerText = dateObj.toLocaleDateString('en-US', options);
+        }
     }
-}
-    
+
     function openEditModal() {
         sel.mode = 'edit';
         document.getElementById('inputName').value = sel.data.name;
@@ -561,42 +583,41 @@ function updateDateDisplay() {
             m.classList.remove('active'); setTimeout(() => m.style.display = 'none', 300);
         });
     }
-   async function confirmBooking() {
-    // 1. Get the values from the input fields
-    const name = document.getElementById('inputName').value.trim();
-    const email = document.getElementById('inputEmail').value.trim();
-    const agenda = document.getElementById('inputAgenda').value.trim();
-    const notes = document.getElementById('inputNotes').value.trim(); // Notes is optional
-    const selectedDate = document.getElementById('datePicker').value;
 
-    // 2. THE VALIDATION CHECK
-    // This stops the code if Name, Email, or Agenda are empty
-    if (!name || !email || !agenda) {
-        alert("Please fill in Name, Email, and Agenda. Only 'Notes' can be left blank.");
-        return; // This "return" stops the function from saving anything
+    async function confirmBooking() {
+        const name = document.getElementById('inputName').value.trim();
+        const email = document.getElementById('inputEmail').value.trim();
+        const agenda = document.getElementById('inputAgenda').value.trim();
+        const notes = document.getElementById('inputNotes').value.trim();
+        const selectedDate = datePicker.value;
+
+        if (!name || !email || !agenda) {
+            alert("Please fill in Name, Email, and Agenda.");
+            return;
+        }
+
+        const { error } = await _supabase.from('meetings').insert([{
+            date: selectedDate,
+            time_slot: sel.time,
+            room_name: sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)",
+            booked_by: name,
+            email: email,
+            agenda: agenda,
+            notes: notes
+        }]);
+
+        if (!error) {
+            closeModals();
+            loadDate();
+        } else {
+            alert("Error: " + error.message);
+        }
     }
 
-    // 3. Proceed with saving to Supabase only if the check passed
-    const { error } = await _supabase.from('meetings').insert([{
-        date: selectedDate,
-        time_slot: sel.time,
-        room_name: sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)",
-        booked_by: name,
-        email: email,
-        agenda: agenda,
-        notes: notes
-    }]);
-
-    if (!error) {
-        alert("Booking Successful!");
-        closeModals();
-        loadDate();
-    } else {
-        alert("Error saving: " + error.message);
-    }
-}
-
-    window.onclick = (e) => { menu.style.display = 'none'; if(e.target.classList.contains('modal-overlay')) closeModals(); };
+    window.onclick = (e) => { 
+        menu.style.display = 'none'; 
+        if(e.target.classList.contains('modal-overlay')) closeModals(); 
+    };
 </script>
 </body>
 </html>
