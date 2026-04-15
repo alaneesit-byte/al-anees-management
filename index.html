@@ -441,22 +441,24 @@
         });
     }
 
-    // --- 3. PERMANENT PINNING LOGIC (FIXED) ---
+    // --- 3. PERMANENT PINNING LOGIC (LIQUID GLASS DESIGN) ---
     function openPinModal() {
-        const shortDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const fullDayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const grid = document.getElementById('dayPickerGrid');
         
-        // Ensure the grid exists before trying to fill it
-        if (!grid) {
-            alert("Error: dayPickerGrid element not found in HTML.");
-            return;
-        }
+        if (!grid) return;
 
-        grid.innerHTML = shortDays.map(day => `
+        // Clean grid layout with Liquid Glass styling
+        grid.style.display = "grid";
+        grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(100px, 1fr))";
+        grid.style.gap = "10px";
+        grid.style.padding = "10px";
+
+        grid.innerHTML = fullDayNames.map(day => `
             <div class="day-chip" 
                  onclick="toggleDayChip(this)" 
-                 data-day="${day}"
-                 style="padding: 10px; border: 1px solid #ddd; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s; font-weight: bold; background: white; color: black; display: inline-block; width: 60px; margin: 5px;">
+                 data-day="${day.substring(0,3)}"
+                 style="padding: 12px 5px; border: 1px solid rgba(255,255,255,0.3); border-radius: 12px; text-align: center; cursor: pointer; transition: 0.3s; font-weight: bold; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: #333; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
                 ${day}
             </div>
         `).join('');
@@ -469,22 +471,22 @@
     function toggleDayChip(chip) {
         const isActive = chip.classList.toggle('active');
         if (isActive) {
-            chip.style.backgroundColor = '#1a63ac';
-            chip.style.color = 'white';
-            chip.style.borderColor = '#1a63ac';
+            chip.style.background = "linear-gradient(135deg, #1a63ac, #4a90e2)";
+            chip.style.color = "white";
+            chip.style.borderColor = "transparent";
+            chip.style.boxShadow = "0 8px 15px rgba(26, 99, 172, 0.3)";
         } else {
-            chip.style.backgroundColor = 'white';
-            chip.style.color = 'black';
-            chip.style.borderColor = '#ddd';
+            chip.style.background = "rgba(255,255,255,0.2)";
+            chip.style.color = "#333";
+            chip.style.borderColor = "rgba(255,255,255,0.3)";
+            chip.style.boxShadow = "0 4px 6px rgba(0,0,0,0.05)";
         }
     }
 
     function selectAllDays() {
         const chips = document.querySelectorAll('.day-chip');
         chips.forEach(chip => {
-            if (!chip.classList.contains('active')) {
-                toggleDayChip(chip);
-            }
+            if (!chip.classList.contains('active')) toggleDayChip(chip);
         });
     }
 
@@ -518,9 +520,20 @@
             if(!sel.isPerm) await _supabase.from('meetings').delete().eq('id', sel.id);
             closeModals(); 
             loadDate();
-        } else {
-            alert("Error: " + error.message);
-        }
+        } else alert("Error: " + error.message);
+    }
+
+    async function unpinBooking() {
+        if (!confirm("Remove this permanent booking?")) return;
+        const { error } = await _supabase.from('permanent_meetings').delete().eq('id', sel.id);
+        if (!error) {
+            await _supabase.from('meeting_history').insert([{
+                slot_id: sel.time, slot_date: datePicker.value, action_type: 'UNPINNED',
+                user_name: sel.data.name, user_email: sel.data.email, reason: 'Removed permanent status'
+            }]);
+            loadDate();
+            menu.style.display = 'none';
+        } else alert("Error: " + error.message);
     }
 
     // --- 4. HISTORY, EDIT, & DELETE ---
@@ -600,15 +613,10 @@
         const email = document.getElementById('inputEmail').value.trim();
         const agenda = document.getElementById('inputAgenda').value.trim();
         const notes = document.getElementById('inputNotes').value.trim();
-        const selectedDate = datePicker.value;
-
-        if (!name || !email || !agenda) {
-            alert("Please fill in Name, Email, and Agenda.");
-            return;
-        }
+        if (!name || !email || !agenda) return alert("Please fill in Name, Email, and Agenda.");
 
         const { error } = await _supabase.from('meetings').insert([{
-            date: selectedDate,
+            date: datePicker.value,
             time_slot: sel.time,
             room_name: sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)",
             booked_by: name,
@@ -617,12 +625,8 @@
             notes: notes
         }]);
 
-        if (!error) {
-            closeModals();
-            loadDate();
-        } else {
-            alert("Error: " + error.message);
-        }
+        if (!error) { closeModals(); loadDate(); }
+        else alert("Error: " + error.message);
     }
 
     window.onclick = (e) => { 
