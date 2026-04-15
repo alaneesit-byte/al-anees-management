@@ -338,16 +338,11 @@
         const userEmail = document.getElementById('otp_userEmail').value;
         const btn = document.getElementById('sendOtpBtn');
         if (!userName || !userEmail) return alert("Please enter your Name and Email first.");
-
         btn.innerText = "SENDING...";
         btn.disabled = true;
         generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
-        
         emailjs.send('service_nvgioq5', 'template_yjywnjc', {
-            email: adminEmail,
-            from_name: userName,
-            from_email: userEmail,
-            otp_code: generatedOTP
+            email: adminEmail, from_name: userName, from_email: userEmail, otp_code: generatedOTP
         }).then(() => {
             alert("OTP Code Sent!");
             document.getElementById('otp-request-fields').style.display = 'none';
@@ -357,11 +352,8 @@
 
     function verifyOTP() {
         const enteredOTP = ['o1','o2','o3','o4'].map(id => document.getElementById(id).value).join('');
-        if (enteredOTP === generatedOTP && generatedOTP !== "") {
-            enterSystem();
-        } else {
-            alert("Invalid OTP.");
-        }
+        if (enteredOTP === generatedOTP && generatedOTP !== "") enterSystem();
+        else alert("Invalid OTP.");
     }
 
     function checkLogin() {
@@ -378,9 +370,7 @@
     }
 
     function logout() {
-        if(confirm("Are you sure you want to logout?")) {
-            location.reload(); 
-        }
+        if(confirm("Are you sure you want to logout?")) location.reload();
     }
 
     // --- 2. DATE NAVIGATION ---
@@ -402,7 +392,7 @@
         }
     }
 
-    // --- 3. SYSTEM CORE & DATABASE ---
+    // --- 3. CORE SYSTEM ---
     const grid = document.getElementById('gridBody');
     const menu = document.getElementById('context-menu');
     const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.co', 'sb_publishable_zR1fAyjSofxeXbnDx6d0AA_gGQY9eL8');
@@ -410,13 +400,13 @@
     let sel = null;
 
     async function loadDate() {
-        grid.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px;">Loading Schedule...</td></tr>';
+        grid.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px;">Loading...</td></tr>';
         const curDateStr = document.getElementById('datePicker').value;
-        const curDayName = dayNames[new Date(curDateStr).getDay()];
+        const curDayNameShort = dayNames[new Date(curDateStr).getDay()].substring(0,3);
         
         const [liveRes, permRes] = await Promise.all([
             _supabase.from('meetings').select('*').eq('date', curDateStr),
-            _supabase.from('permanent_meetings').select('*').eq('day_name', curDayName.substring(0,3))
+            _supabase.from('permanent_meetings').select('*').eq('day_name', curDayNameShort)
         ]);
 
         grid.innerHTML = '';
@@ -453,6 +443,7 @@
                     };
                 } else {
                     slot.className = "slot available"; slot.innerText = "Available";
+                    // FIX: This ensures clicking the slot actually opens the modal
                     slot.onclick = () => openBookingModal(time, i);
                 }
                 td.appendChild(slot); tr.appendChild(td);
@@ -461,11 +452,11 @@
         });
     }
 
-    // --- 4. PERMANENT PINNING & UNPINNING ---
+    // --- 4. PIN/UNPIN LOGIC ---
     function openPinModal() {
-        const fullDayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const fullDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const pGrid = document.getElementById('dayPickerGrid');
-        pGrid.innerHTML = fullDayNames.map(day => `
+        pGrid.innerHTML = fullDays.map(day => `
             <div class="day-chip" onclick="toggleDayChip(this)" data-day="${day.substring(0,3)}"
                  style="padding:12px; border:1px solid rgba(255,255,255,0.3); border-radius:12px; text-align:center; cursor:pointer; background:rgba(255,255,255,0.2); backdrop-filter:blur(10px); font-weight:bold;">
                 ${day}
@@ -507,19 +498,24 @@
         if(!confirm("Remove permanent status?")) return;
         const { error } = await _supabase.from('permanent_meetings').delete().eq('id', sel.id);
         if(!error) { loadDate(); menu.style.display = 'none'; }
+        else alert("Error: " + error.message);
     }
 
-    // --- 5. BOOKING & MODALS ---
+    // --- 5. MODALS & BOOKING ---
     function openBookingModal(time, roomIdx) {
         sel = { time, roomIdx };
         document.getElementById('bookingModal').style.display = 'flex';
+        // Clear previous inputs
+        document.getElementById('inputName').value = '';
+        document.getElementById('inputEmail').value = '';
+        document.getElementById('inputAgenda').value = '';
     }
 
     async function confirmBooking() {
         const name = document.getElementById('inputName').value.trim();
         const email = document.getElementById('inputEmail').value.trim();
         const agenda = document.getElementById('inputAgenda').value.trim();
-        if(!name || !email || !agenda) return alert("Fill all required fields");
+        if(!name || !email || !agenda) return alert("All fields are required.");
 
         const { error } = await _supabase.from('meetings').insert([{
             date: document.getElementById('datePicker').value, time_slot: sel.time,
@@ -527,7 +523,8 @@
             booked_by: name, email: email, agenda: agenda, notes: document.getElementById('inputNotes').value
         }]);
 
-        if(!error) { closeModals(); loadDate(); } else alert(error.message);
+        if(!error) { closeModals(); loadDate(); } 
+        else alert("Error: " + error.message);
     }
 
     function closeModals() {
@@ -540,7 +537,10 @@
         loadDate();
     };
 
-    window.onclick = (e) => { menu.style.display = 'none'; if(e.target.classList.contains('modal-overlay')) closeModals(); };
+    window.onclick = (e) => { 
+        menu.style.display = 'none'; 
+        if(e.target.classList.contains('modal-overlay')) closeModals(); 
+    };
 </script>
 </body>
 </html>
