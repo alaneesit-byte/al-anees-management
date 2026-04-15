@@ -326,7 +326,7 @@
     let generatedOTP = "";
     (function(){ emailjs.init("QcTjWCsESbgBj43VZ"); })();
 
-    // --- 1. LOGIN & OTP LOGIC ---
+    // --- 1. LOGIN, OTP & LOGOUT ---
     function showOTP() {
         document.getElementById('standard-login-fields').style.display = 'none';
         document.getElementById('otp-section').style.display = 'block';
@@ -377,29 +377,49 @@
         loadDate();
     }
 
-    // --- 2. SYSTEM CORE & DATABASE ---
+    function logout() {
+        if(confirm("Are you sure you want to logout?")) {
+            location.reload(); 
+        }
+    }
+
+    // --- 2. DATE NAVIGATION ---
+    function changeDate(days) {
+        const dp = document.getElementById('datePicker');
+        let d = new Date(dp.value);
+        d.setDate(d.getDate() + days);
+        dp.value = d.toISOString().split('T')[0];
+        updateDateDisplay();
+        loadDate();
+    }
+
+    function updateDateDisplay() {
+        const dp = document.getElementById('datePicker');
+        const display = document.getElementById('dayDisplay');
+        if (dp && display) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            display.innerText = new Date(dp.value).toLocaleDateString('en-US', options);
+        }
+    }
+
+    // --- 3. SYSTEM CORE & DATABASE ---
     const grid = document.getElementById('gridBody');
     const menu = document.getElementById('context-menu');
-    const bookingModal = document.getElementById('bookingModal');
-    const pinModal = document.getElementById('pinModal');
-    const datePicker = document.getElementById('datePicker');
-    const dayDisplay = document.getElementById('dayDisplay');
+    const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.co', 'sb_publishable_zR1fAyjSofxeXbnDx6d0AA_gGQY9eL8');
     const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     let sel = null;
 
-    const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.co', 'sb_publishable_zR1fAyjSofxeXbnDx6d0AA_gGQY9eL8');
-
     async function loadDate() {
-        grid.innerHTML = '';
-        const curDateStr = datePicker.value;
+        grid.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px;">Loading Schedule...</td></tr>';
+        const curDateStr = document.getElementById('datePicker').value;
         const curDayName = dayNames[new Date(curDateStr).getDay()];
-        dayDisplay.innerText = curDayName;
-
+        
         const [liveRes, permRes] = await Promise.all([
             _supabase.from('meetings').select('*').eq('date', curDateStr),
-            _supabase.from('permanent_meetings').select('*').eq('day_name', curDayName)
+            _supabase.from('permanent_meetings').select('*').eq('day_name', curDayName.substring(0,3))
         ]);
 
+        grid.innerHTML = '';
         const times = ["07:00 AM - 08:00 AM"];
         let d = new Date(); d.setHours(8, 0, 0);
         while(d.getHours() < 18) {
@@ -441,198 +461,86 @@
         });
     }
 
-    // --- 3. PERMANENT PINNING LOGIC (LIQUID GLASS DESIGN) ---
+    // --- 4. PERMANENT PINNING & UNPINNING ---
     function openPinModal() {
         const fullDayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const grid = document.getElementById('dayPickerGrid');
-        
-        if (!grid) return;
-
-        // Clean grid layout with Liquid Glass styling
-        grid.style.display = "grid";
-        grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(100px, 1fr))";
-        grid.style.gap = "10px";
-        grid.style.padding = "10px";
-
-        grid.innerHTML = fullDayNames.map(day => `
-            <div class="day-chip" 
-                 onclick="toggleDayChip(this)" 
-                 data-day="${day.substring(0,3)}"
-                 style="padding: 12px 5px; border: 1px solid rgba(255,255,255,0.3); border-radius: 12px; text-align: center; cursor: pointer; transition: 0.3s; font-weight: bold; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: #333; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        const pGrid = document.getElementById('dayPickerGrid');
+        pGrid.innerHTML = fullDayNames.map(day => `
+            <div class="day-chip" onclick="toggleDayChip(this)" data-day="${day.substring(0,3)}"
+                 style="padding:12px; border:1px solid rgba(255,255,255,0.3); border-radius:12px; text-align:center; cursor:pointer; background:rgba(255,255,255,0.2); backdrop-filter:blur(10px); font-weight:bold;">
                 ${day}
             </div>
         `).join('');
-
-        pinModal.style.display = 'flex';
-        setTimeout(() => pinModal.classList.add('active'), 10);
+        document.getElementById('pinModal').style.display = 'flex';
         menu.style.display = 'none';
     }
 
     function toggleDayChip(chip) {
-        const isActive = chip.classList.toggle('active');
-        if (isActive) {
-            chip.style.background = "linear-gradient(135deg, #1a63ac, #4a90e2)";
-            chip.style.color = "white";
-            chip.style.borderColor = "transparent";
-            chip.style.boxShadow = "0 8px 15px rgba(26, 99, 172, 0.3)";
+        if(chip.classList.toggle('active')) {
+            chip.style.background = "#1a63ac"; chip.style.color = "white";
         } else {
-            chip.style.background = "rgba(255,255,255,0.2)";
-            chip.style.color = "#333";
-            chip.style.borderColor = "rgba(255,255,255,0.3)";
-            chip.style.boxShadow = "0 4px 6px rgba(0,0,0,0.05)";
+            chip.style.background = "rgba(255,255,255,0.2)"; chip.style.color = "black";
         }
     }
 
     function selectAllDays() {
-        const chips = document.querySelectorAll('.day-chip');
-        chips.forEach(chip => {
-            if (!chip.classList.contains('active')) toggleDayChip(chip);
-        });
+        document.querySelectorAll('.day-chip').forEach(c => { if(!c.classList.contains('active')) toggleDayChip(c); });
     }
 
     async function confirmPin() {
-        const chips = document.querySelectorAll('.day-chip.active');
-        const days = Array.from(chips).map(c => c.dataset.day);
-        
+        const days = Array.from(document.querySelectorAll('.day-chip.active')).map(c => c.dataset.day);
         if(days.length === 0) return alert("Select at least one day");
         
-        const roomName = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
         const pinData = days.map(day => ({
-            day_name: day,
-            time_slot: sel.time,
-            room_name: roomName,
-            booked_by: sel.data.name,
-            agenda: sel.data.agenda,
-            notes: sel.data.notes || "",
-            email: sel.data.email || ""
+            day_name: day, time_slot: sel.time, room_name: sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)",
+            booked_by: sel.data.name, agenda: sel.data.agenda, notes: sel.data.notes || "", email: sel.data.email || ""
         }));
 
         const { error } = await _supabase.from('permanent_meetings').insert(pinData);
-        if (!error) {
-            await _supabase.from('meeting_history').insert([{
-                slot_id: sel.time, 
-                slot_date: datePicker.value, 
-                action_type: 'PINNED AS PERMANENT',
-                user_name: sel.data.name, 
-                user_email: sel.data.email, 
-                reason: 'Permanent booking for: ' + days.join(', ')
-            }]);
+        if(!error) {
             if(!sel.isPerm) await _supabase.from('meetings').delete().eq('id', sel.id);
-            closeModals(); 
-            loadDate();
+            closeModals(); loadDate();
         } else alert("Error: " + error.message);
     }
 
     async function unpinBooking() {
-        if (!confirm("Remove this permanent booking?")) return;
+        if(!confirm("Remove permanent status?")) return;
         const { error } = await _supabase.from('permanent_meetings').delete().eq('id', sel.id);
-        if (!error) {
-            await _supabase.from('meeting_history').insert([{
-                slot_id: sel.time, slot_date: datePicker.value, action_type: 'UNPINNED',
-                user_name: sel.data.name, user_email: sel.data.email, reason: 'Removed permanent status'
-            }]);
-            loadDate();
-            menu.style.display = 'none';
-        } else alert("Error: " + error.message);
+        if(!error) { loadDate(); menu.style.display = 'none'; }
     }
 
-    // --- 4. HISTORY, EDIT, & DELETE ---
-    async function openHistoryModal() {
-        const box = document.getElementById('historyContent');
-        box.innerHTML = "Loading...";
-        document.getElementById('historyModal').style.display = 'flex';
-        document.getElementById('historyModal').classList.add('active');
-        menu.style.display = 'none';
-
-        const { data } = await _supabase.from('meeting_history')
-            .select('*').eq('slot_id', sel.time).eq('slot_date', datePicker.value).order('created_at', {ascending:false});
-
-        if(!data || data.length === 0) box.innerHTML = "<p style='text-align:center; padding:20px;'>No history for this slot.</p>";
-        else box.innerHTML = data.map(log => `
-            <div style="border-left:5px solid ${log.action_type.includes('DELETED')?'#ff4d4d':'#2ecc71'}; background:#fff; padding:15px; margin-bottom:10px; border-radius:8px; border:1px solid #eee;">
-                <div style="display:flex; justify-content:space-between; font-size:11px; color:#999;">
-                    <b>${log.action_type}</b> <span>${new Date(log.created_at).toLocaleString()}</span>
-                </div>
-                <strong>${log.user_name}</strong><br><small>Reason: ${log.reason}</small>
-            </div>`).join('');
-    }
-
-    async function deleteBooking() {
-        const n = prompt("Name:"), e = prompt("Email:"), r = prompt("Reason:");
-        if(!n || !e || !r) return alert("All fields required.");
-        if(confirm("Delete this booking?")) {
-            await _supabase.from('meeting_history').insert([{
-                slot_id: sel.time, slot_date: datePicker.value, action_type: 'DELETED',
-                user_name: n, user_email: e, reason: r
-            }]);
-            await _supabase.from(sel.isPerm ? 'permanent_meetings' : 'meetings').delete().eq('id', sel.id);
-            loadDate(); menu.style.display = 'none';
-        }
-    }
-
+    // --- 5. BOOKING & MODALS ---
     function openBookingModal(time, roomIdx) {
-        sel = { time, roomIdx, mode: 'new' };
+        sel = { time, roomIdx };
         document.getElementById('bookingModal').style.display = 'flex';
-        setTimeout(() => document.getElementById('bookingModal').classList.add('active'), 10);
-    }
-
-    window.onload = function() {
-        const today = new Date().toISOString().split('T')[0];
-        if (datePicker) {
-            datePicker.value = today;
-            updateDateDisplay();
-            loadDate();
-        }
-    };
-
-    function updateDateDisplay() {
-        if (datePicker && dayDisplay) {
-            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            const dateObj = new Date(datePicker.value);
-            dayDisplay.innerText = dateObj.toLocaleDateString('en-US', options);
-        }
-    }
-
-    function openEditModal() {
-        sel.mode = 'edit';
-        document.getElementById('inputName').value = sel.data.name;
-        document.getElementById('inputAgenda').value = sel.data.agenda;
-        document.getElementById('bookingModal').style.display = 'flex';
-        document.getElementById('bookingModal').classList.add('active');
-        menu.style.display = 'none';
-    }
-
-    function closeModals() {
-        document.querySelectorAll('.modal-overlay').forEach(m => {
-            m.classList.remove('active'); setTimeout(() => m.style.display = 'none', 300);
-        });
     }
 
     async function confirmBooking() {
         const name = document.getElementById('inputName').value.trim();
         const email = document.getElementById('inputEmail').value.trim();
         const agenda = document.getElementById('inputAgenda').value.trim();
-        const notes = document.getElementById('inputNotes').value.trim();
-        if (!name || !email || !agenda) return alert("Please fill in Name, Email, and Agenda.");
+        if(!name || !email || !agenda) return alert("Fill all required fields");
 
         const { error } = await _supabase.from('meetings').insert([{
-            date: datePicker.value,
-            time_slot: sel.time,
+            date: document.getElementById('datePicker').value, time_slot: sel.time,
             room_name: sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)",
-            booked_by: name,
-            email: email,
-            agenda: agenda,
-            notes: notes
+            booked_by: name, email: email, agenda: agenda, notes: document.getElementById('inputNotes').value
         }]);
 
-        if (!error) { closeModals(); loadDate(); }
-        else alert("Error: " + error.message);
+        if(!error) { closeModals(); loadDate(); } else alert(error.message);
     }
 
-    window.onclick = (e) => { 
-        menu.style.display = 'none'; 
-        if(e.target.classList.contains('modal-overlay')) closeModals(); 
+    function closeModals() {
+        document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+    }
+
+    window.onload = () => {
+        document.getElementById('datePicker').value = new Date().toISOString().split('T')[0];
+        updateDateDisplay();
+        loadDate();
     };
+
+    window.onclick = (e) => { menu.style.display = 'none'; if(e.target.classList.contains('modal-overlay')) closeModals(); };
 </script>
 </body>
 </html>
