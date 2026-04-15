@@ -516,6 +516,27 @@
         document.getElementById('bookingModal').style.display = 'flex';
         setTimeout(() => document.getElementById('bookingModal').classList.add('active'), 10);
     }
+    // Ensure this runs when the page first opens
+window.onload = function() {
+    const today = new Date().toISOString().split('T')[0];
+    const dp = document.getElementById('datePicker');
+    
+    if (dp) {
+        dp.value = today; // This sets the date automatically
+        updateDateDisplay(); // This fixes the "undefined" text in the header
+        loadDate(); // This loads the blue/available slots
+    }
+};
+
+function updateDateDisplay() {
+    const dp = document.getElementById('datePicker');
+    const display = document.getElementById('dateDisplay'); // The span showing "undefined"
+    if (dp && display) {
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const dateObj = new Date(dp.value);
+        display.innerText = dateObj.toLocaleDateString('en-US', options);
+    }
+}
     
     function openEditModal() {
         sel.mode = 'edit';
