@@ -531,20 +531,23 @@
             m.classList.remove('active'); setTimeout(() => m.style.display = 'none', 300);
         });
     }
-    async function confirmBooking() {
+   async function confirmBooking() {
+    // 1. Get the date directly from the element to ensure it's not empty
+    const selectedDate = document.getElementById('datePicker').value;
+    
     const name = document.getElementById('inputName').value;
     const email = document.getElementById('inputEmail').value;
     const agenda = document.getElementById('inputAgenda').value;
     const notes = document.getElementById('inputNotes').value;
 
-    if(!name || !agenda) {
-        alert("Please enter Name and Agenda");
+    // 2. Add a check to stop the error before it hits the database
+    if (!selectedDate) {
+        alert("Please select a date on the calendar first.");
         return;
     }
 
-    // This part sends the data to your 'meetings' table
     const { error } = await _supabase.from('meetings').insert([{
-        date: datePicker.value,
+        date: selectedDate, // Use the variable we just grabbed
         time_slot: sel.time,
         room_name: sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)",
         booked_by: name,
@@ -554,18 +557,9 @@
     }]);
 
     if (!error) {
-        // This adds it to your activity log/history
-        await _supabase.from('meeting_history').insert([{
-            slot_id: sel.time,
-            slot_date: datePicker.value,
-            action_type: 'BOOKED',
-            user_name: name,
-            user_email: email,
-            reason: 'New booking created'
-        }]);
-        
+        // ... (rest of your history logging code)
         closeModals();
-        loadDate(); // Refreshes the grid so the blue box appears
+        loadDate(); 
     } else {
         alert("Error saving: " + error.message);
     }
