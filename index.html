@@ -83,10 +83,6 @@
         .nav-btn { background: rgba(255,255,255,0.8); border: 1px solid #000; color: #000; cursor: pointer; font-weight: 700; padding: 5px 20px; border-radius: 5px; font-size: 11px; text-transform: uppercase; transition: 0.3s; }
         .nav-btn:hover { background: #000; color: #fff; transform: scale(1.05); }
 
-        .legend-container { display: flex; justify-content: flex-start; gap: 20px; margin-bottom: 15px; padding: 0 10px; }
-        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--primary-navy); }
-        .legend-dot { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.1); }
-
         .spreadsheet { 
             background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px);
             border-radius: 20px; box-shadow: var(--glass-shadow); overflow: hidden; border: 1px solid var(--glass-border);
@@ -174,12 +170,6 @@
             </div>
         </div>
 
-        <div class="legend-container">
-            <div class="legend-item"><div class="legend-dot" style="background: rgba(255,255,255,0.4);"></div> Available</div>
-            <div class="legend-item"><div class="legend-dot" style="background: var(--booked-blue);"></div> Booked</div>
-            <div class="legend-item"><div class="legend-dot" style="background: var(--pin-gold);"></div> Permanent</div>
-        </div>
-
         <div class="spreadsheet">
             <table>
                 <thead><tr><th class="time-col">Time Duration</th><th>Meeting Room (Big)</th><th>Meeting Room (Small)</th></tr></thead>
@@ -215,16 +205,23 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="historyModal">
+    <div class="modal-box">
+        <h3>Log Deletion</h3>
+        <div class="modal-field"><label>Your Name</label><input type="text" id="histName"></div>
+        <div class="modal-field"><label>Your Email</label><input type="email" id="histEmail"></div>
+        <button class="login-btn" onclick="finalizeDelete()">CONFIRM DELETE & LOG</button>
+    </div>
+</div>
+
 <div id="context-menu">
-    <button onclick="alert('Edit logic here')">✏️ Edit Booking</button>
     <button id="pin-perm-btn" onclick="openPinModal()">📌 Pin as Permanent</button>
     <button id="unpin-perm-btn" onclick="unpinBooking()">📍 Unpin Permanent</button>
-    <button onclick="deleteBooking()" style="color: red; font-weight: bold;">🗑️ Delete Booking</button>
+    <button onclick="startDelete()" style="color: red; font-weight: bold;">🗑️ Delete Booking</button>
 </div>
 
 <script>
     const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.co', 'sb_publishable_zR1fAyjSofxeXbnDx6d0AA_gGQY9eL8');
-    const adminEmail = "sajidhhameed1401@gmail.com";
     const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     let generatedOTP = "", sel = null;
 
@@ -242,7 +239,7 @@
         const email = document.getElementById('otp_userEmail').value;
         if (!name || !email) return alert("Enter Name and Email");
         generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
-        emailjs.send('service_nvgioq5', 'template_yjywnjc', { email: adminEmail, from_name: name, from_email: email, otp_code: generatedOTP })
+        emailjs.send('service_nvgioq5', 'template_yjywnjc', { email: "sajidhhameed1401@gmail.com", from_name: name, from_email: email, otp_code: generatedOTP })
             .then(() => { alert("OTP Sent!"); document.getElementById('otp-request-fields').style.display = 'none'; document.getElementById('otp-inputs').style.display = 'block'; });
     }
 
@@ -305,6 +302,10 @@
                 if(data) {
                     slot.className = isP ? "slot permanent" : "slot booked";
                     slot.innerHTML = `<b>${data.booked_by}</b><div style="font-size:10px;">${data.agenda}</div>`;
+                    
+                    // --- NEW: HOVER NOTES ---
+                    if(data.notes) slot.title = "Notes: " + data.notes;
+
                     td.oncontextmenu = (e) => {
                         e.preventDefault(); sel = { id: data.id, time: t, roomIdx: i, isP: isP, data: data };
                         const menu = document.getElementById('context-menu');
@@ -347,17 +348,39 @@
         if(!error) { await _supabase.from('meetings').delete().eq('id', sel.id); closeModals(); loadDate(); }
     }
 
+    // --- NEW: DELETE HISTORY LOGIC ---
+    function startDelete() {
+        document.getElementById('context-menu').style.display = 'none';
+        document.getElementById('historyModal').style.display = 'flex';
+    }
+
+    async function finalizeDelete() {
+        const delName = document.getElementById('histName').value;
+        const delEmail = document.getElementById('histEmail').value;
+        if(!delName || !delEmail) return alert("Please provide details for history.");
+
+        // Log to history table
+        await _supabase.from('history').insert([{
+            deleted_by: delName,
+            deleter_email: delEmail,
+            original_booking: sel.data.booked_by,
+            agenda: sel.data.agenda,
+            room: sel.roomIdx === 0 ? "Big" : "Small",
+            time: sel.time,
+            action: "Delete"
+        }]);
+
+        const table = sel.isP ? 'permanent_meetings' : 'meetings';
+        await _supabase.from(table).delete().eq('id', sel.id);
+        
+        closeModals();
+        loadDate();
+    }
+
     async function unpinBooking() {
         if(!confirm("Remove permanent?")) return;
         const { error } = await _supabase.from('permanent_meetings').delete().eq('id', sel.id);
         if(!error) { loadDate(); document.getElementById('context-menu').style.display = 'none'; }
-    }
-
-    async function deleteBooking() {
-        if(!confirm("Delete?")) return;
-        const table = sel.isP ? 'permanent_meetings' : 'meetings';
-        await _supabase.from(table).delete().eq('id', sel.id);
-        loadDate(); document.getElementById('context-menu').style.display = 'none';
     }
 
     function selectAllDays() { document.querySelectorAll('.day-chip').forEach(c => c.classList.add('active')); }
