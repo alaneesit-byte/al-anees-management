@@ -265,7 +265,9 @@
         <div class="modal-field"><label>Agenda</label><input type="text" id="inputAgenda"></div>
         <div class="modal-field"><label>Notes</label><textarea id="inputNotes" rows="2"></textarea></div>
         <div style="display:flex; gap:12px;">
-            <button class="btn-primary" onclick="confirmBooking()" style="background-color: #1a63ac !important; color: white;">SAVE BOOKING</button>
+           <button class="btn-primary" onclick="confirmBooking()" style="background-color: #1a63ac; color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px; letter-spacing: 0.5px; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%;">
+    SAVE BOOKING
+</button>
             <button class="cancel-btn-modal" onclick="closeModals()">Cancel</button>
         </div>
     </div>
@@ -441,16 +443,23 @@
 
     // --- 3. PERMANENT PINNING LOGIC ---
     function openPinModal() {
-        document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('active'));
-        pinModal.style.display = 'flex';
-        setTimeout(() => pinModal.classList.add('active'), 10);
-        menu.style.display = 'none';
-    }
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const grid = document.getElementById('dayPickerGrid');
+    
+    // This clears the grid and adds the clickable day buttons
+    grid.innerHTML = dayNames.map(day => `
+        <div class="day-chip" 
+             onclick="this.classList.toggle('active')" 
+             data-day="${day}"
+             style="padding: 10px; border: 1px solid #ddd; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s;">
+            ${day}
+        </div>
+    `).join('');
 
-    function toggleDay(chip) {
-        chip.classList.toggle('active');
-    }
-
+    // Show the modal
+    const pinModal = document.getElementById('pinModal');
+    pinModal.style.display = 'flex';
+}
     async function confirmPin() {
         const days = Array.from(document.querySelectorAll('.day-chip.active')).map(c => c.dataset.day);
         if(days.length === 0) return alert("Select at least one day");
