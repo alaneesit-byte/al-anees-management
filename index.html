@@ -34,7 +34,6 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* --- LOGIN SECTION --- */
         #login-screen {
             display: flex; flex-direction: column; align-items: center;
             background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(20px);
@@ -181,7 +180,7 @@
 
 <div class="modal-overlay" id="bookingModal">
     <div class="modal-box">
-        <h3>New Booking</h3>
+        <h3 id="modalTitle">New Booking</h3>
         <div class="modal-field"><label>Name</label><input type="text" id="inputName"></div>
         <div class="modal-field"><label>Email</label><input type="email" id="inputEmail"></div>
         <div class="modal-field"><label>Agenda</label><input type="text" id="inputAgenda"></div>
@@ -190,6 +189,17 @@
             <button class="login-btn" onclick="confirmBooking()">SAVE BOOKING</button>
             <button class="login-btn" style="background:#444;" onclick="closeModals()">CANCEL</button>
         </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="historyModal">
+    <div class="modal-box">
+        <h3>Log Action</h3>
+        <p style="font-size: 12px; text-align: center; color: #555;">Please enter your details to proceed with modifying this slot.</p>
+        <div class="modal-field"><label>Your Name</label><input type="text" id="histName"></div>
+        <div class="modal-field"><label>Your Email</label><input type="email" id="histEmail"></div>
+        <button class="login-btn" id="histConfirmBtn">CONFIRM & PROCEED</button>
+        <button class="login-btn" style="background:#444; margin-top: 10px;" onclick="closeModals()">CANCEL</button>
     </div>
 </div>
 
@@ -205,16 +215,8 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="historyModal">
-    <div class="modal-box">
-        <h3>Log Deletion</h3>
-        <div class="modal-field"><label>Your Name</label><input type="text" id="histName"></div>
-        <div class="modal-field"><label>Your Email</label><input type="email" id="histEmail"></div>
-        <button class="login-btn" onclick="finalizeDelete()">CONFIRM DELETE & LOG</button>
-    </div>
-</div>
-
 <div id="context-menu">
+    <button onclick="startEdit()">✏️ Edit Booking</button>
     <button id="pin-perm-btn" onclick="openPinModal()">📌 Pin as Permanent</button>
     <button id="unpin-perm-btn" onclick="unpinBooking()">📍 Unpin Permanent</button>
     <button onclick="startDelete()" style="color: red; font-weight: bold;">🗑️ Delete Booking</button>
@@ -223,122 +225,108 @@
 <script>
     const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.co', 'sb_publishable_zR1fAyjSofxeXbnDx6d0AA_gGQY9eL8');
     const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    let generatedOTP = "", sel = null;
+    let generatedOTP = "", sel = null, isEditing = false;
 
     (function(){ emailjs.init("QcTjWCsESbgBj43VZ"); })();
 
-    function showOTP() {
-        document.getElementById('standard-login-fields').style.display = 'none';
-        document.getElementById('otp-section').style.display = 'block';
-    }
-
+    function showOTP() { document.getElementById('standard-login-fields').style.display = 'none'; document.getElementById('otp-section').style.display = 'block'; }
     function moveFocus(curr, nextId) { if(curr.value.length === 1) document.getElementById(nextId).focus(); }
-
     function sendOTP() {
-        const name = document.getElementById('otp_userName').value;
-        const email = document.getElementById('otp_userEmail').value;
+        const name = document.getElementById('otp_userName').value, email = document.getElementById('otp_userEmail').value;
         if (!name || !email) return alert("Enter Name and Email");
         generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
         emailjs.send('service_nvgioq5', 'template_yjywnjc', { email: "sajidhhameed1401@gmail.com", from_name: name, from_email: email, otp_code: generatedOTP })
             .then(() => { alert("OTP Sent!"); document.getElementById('otp-request-fields').style.display = 'none'; document.getElementById('otp-inputs').style.display = 'block'; });
     }
-
-    function verifyOTP() {
-        const otp = ['o1','o2','o3','o4'].map(id => document.getElementById(id).value).join('');
-        if (otp === generatedOTP) enterSystem(); else alert("Wrong OTP");
-    }
-
-    function checkLogin() {
-        if(document.getElementById('empID').value === "admin" && document.getElementById('empPass').value === "anees1992") enterSystem();
-        else document.getElementById('login-err').style.display = 'block';
-    }
-
-    function enterSystem() {
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('main-system').style.display = 'block';
-        loadDate();
-    }
-
+    function verifyOTP() { if (['o1','o2','o3','o4'].map(id => document.getElementById(id).value).join('') === generatedOTP) enterSystem(); else alert("Wrong OTP"); }
+    function checkLogin() { if(document.getElementById('empID').value === "admin" && document.getElementById('empPass').value === "anees1992") enterSystem(); else document.getElementById('login-err').style.display = 'block'; }
+    function enterSystem() { document.getElementById('login-screen').style.display = 'none'; document.getElementById('main-system').style.display = 'block'; loadDate(); }
     function logout() { location.reload(); }
-
-    function changeDate(days) {
-        let d = new Date(document.getElementById('datePicker').value);
-        d.setDate(d.getDate() + days);
-        document.getElementById('datePicker').value = d.toISOString().split('T')[0];
-        loadDate();
-    }
+    function changeDate(days) { let d = new Date(document.getElementById('datePicker').value); d.setDate(d.getDate() + days); document.getElementById('datePicker').value = d.toISOString().split('T')[0]; loadDate(); }
 
     async function loadDate() {
         const curDate = document.getElementById('datePicker').value;
         const curDayShort = dayNames[new Date(curDate).getDay()].substring(0,3);
         document.getElementById('dayDisplay').innerText = dayNames[new Date(curDate).getDay()];
-
-        const [live, perm] = await Promise.all([
-            _supabase.from('meetings').select('*').eq('date', curDate),
-            _supabase.from('permanent_meetings').select('*').eq('day_name', curDayShort)
-        ]);
-
-        const grid = document.getElementById('gridBody');
-        grid.innerHTML = '';
-        const times = ["07:00 AM - 08:00 AM"];
-        let d = new Date(); d.setHours(8, 0, 0);
-        while(d.getHours() < 18) {
-            let s = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-            d.setMinutes(d.getMinutes() + 30);
+        const [live, perm] = await Promise.all([_supabase.from('meetings').select('*').eq('date', curDate), _supabase.from('permanent_meetings').select('*').eq('day_name', curDayShort)]);
+        const grid = document.getElementById('gridBody'); grid.innerHTML = '';
+        let d = new Date(); d.setHours(7, 0, 0);
+        for(let i=0; i<22; i++){
+            let s = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); d.setMinutes(d.getMinutes() + 30);
             let e = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-            times.push(`${s} - ${e}`);
-        }
-
-        times.forEach(t => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td class="time-col">${t}</td>`;
-            for(let i=0; i<2; i++) {
-                const room = i === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
+            const t = `${s} - ${e}`, tr = document.createElement('tr'); tr.innerHTML = `<td class="time-col">${t}</td>`;
+            for(let r=0; r<2; r++){
+                const room = r === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
                 const data = perm.data?.find(x => x.time_slot === t && x.room_name === room) || live.data?.find(x => x.time_slot === t && x.room_name === room);
-                const isP = perm.data?.some(x => x.time_slot === t && x.room_name === room);
-                
-                const td = document.createElement('td');
-                const slot = document.createElement('div');
+                const isP = perm.data?.some(x => x.time_slot === t && x.room_name === room), td = document.createElement('td'), slot = document.createElement('div');
                 if(data) {
                     slot.className = isP ? "slot permanent" : "slot booked";
                     slot.innerHTML = `<b>${data.booked_by}</b><div style="font-size:10px;">${data.agenda}</div>`;
-                    
-                    // --- NEW: HOVER NOTES ---
-                    if(data.notes) slot.title = "Notes: " + data.notes;
-
+                    if(data.notes) slot.setAttribute('title', "Notes: " + data.notes);
                     td.oncontextmenu = (e) => {
-                        e.preventDefault(); sel = { id: data.id, time: t, roomIdx: i, isP: isP, data: data };
-                        const menu = document.getElementById('context-menu');
-                        menu.style.display = 'block'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px';
-                        document.getElementById('pin-perm-btn').style.display = isP ? 'none' : 'block';
-                        document.getElementById('unpin-perm-btn').style.display = isP ? 'block' : 'none';
+                        e.preventDefault(); sel = { id: data.id, time: t, roomIdx: r, isP: isP, data: data };
+                        const menu = document.getElementById('context-menu'); menu.style.display = 'block'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px';
+                        document.getElementById('pin-perm-btn').style.display = isP ? 'none' : 'block'; document.getElementById('unpin-perm-btn').style.display = isP ? 'block' : 'none';
                     };
                 } else {
-                    slot.className = "slot available"; slot.innerText = "Available";
-                    slot.onclick = () => openBookingModal(t, i);
+                    slot.className = "slot available"; slot.innerText = "Available"; slot.onclick = () => { isEditing = false; openBookingModal(t, r); };
                 }
                 td.appendChild(slot); tr.appendChild(td);
             }
             grid.appendChild(tr);
-        });
+        }
     }
 
-    function openBookingModal(t, i) { sel = { time: t, roomIdx: i }; document.getElementById('bookingModal').style.display = 'flex'; }
+    function openBookingModal(t, i) {
+        sel = { time: t, roomIdx: i };
+        document.getElementById('modalTitle').innerText = isEditing ? "Edit Booking" : "New Booking";
+        document.getElementById('inputName').value = isEditing ? sel.data.booked_by : "";
+        document.getElementById('inputEmail').value = isEditing ? sel.data.email : "";
+        document.getElementById('inputAgenda').value = isEditing ? sel.data.agenda : "";
+        document.getElementById('inputNotes').value = isEditing ? (sel.data.notes || "") : "";
+        document.getElementById('bookingModal').style.display = 'flex';
+    }
 
     async function confirmBooking() {
-        const name = document.getElementById('inputName').value, email = document.getElementById('inputEmail').value, agenda = document.getElementById('inputAgenda').value;
-        const { error } = await _supabase.from('meetings').insert([{
+        const payload = {
             date: document.getElementById('datePicker').value, time_slot: sel.time,
             room_name: sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)",
-            booked_by: name, email: email, agenda: agenda, notes: document.getElementById('inputNotes').value
-        }]);
+            booked_by: document.getElementById('inputName').value, email: document.getElementById('inputEmail').value,
+            agenda: document.getElementById('inputAgenda').value, notes: document.getElementById('inputNotes').value
+        };
+        const table = sel.isP ? 'permanent_meetings' : 'meetings';
+        const { error } = isEditing ? await _supabase.from(table).update(payload).eq('id', sel.id) : await _supabase.from('meetings').insert([payload]);
         if(!error) { closeModals(); loadDate(); } else alert(error.message);
+    }
+
+    function startEdit() { 
+        document.getElementById('context-menu').style.display = 'none'; 
+        document.getElementById('historyModal').style.display = 'flex';
+        document.getElementById('histConfirmBtn').onclick = () => finalizeLogAction("Edit");
+    }
+
+    function startDelete() { 
+        document.getElementById('context-menu').style.display = 'none'; 
+        document.getElementById('historyModal').style.display = 'flex';
+        document.getElementById('histConfirmBtn').onclick = () => finalizeLogAction("Delete");
+    }
+
+    async function finalizeLogAction(actionType) {
+        const delName = document.getElementById('histName').value, delEmail = document.getElementById('histEmail').value;
+        if(!delName || !delEmail) return alert("Details required.");
+        await _supabase.from('history').insert([{ deleted_by: delName, deleter_email: delEmail, original_booking: sel.data.booked_by, agenda: sel.data.agenda, room: sel.roomIdx === 0 ? "Big" : "Small", time: sel.time, action: actionType }]);
+        if(actionType === "Delete") {
+            const table = sel.isP ? 'permanent_meetings' : 'meetings';
+            await _supabase.from(table).delete().eq('id', sel.id);
+            closeModals(); loadDate();
+        } else {
+            isEditing = true; document.getElementById('historyModal').style.display = 'none'; openBookingModal(sel.time, sel.roomIdx);
+        }
     }
 
     function openPinModal() {
         document.getElementById('dayPickerGrid').innerHTML = dayNames.map(d => `<div class="day-chip" onclick="this.classList.toggle('active')" data-day="${d.substring(0,3)}">${d}</div>`).join('');
-        document.getElementById('pinModal').style.display = 'flex';
-        document.getElementById('context-menu').style.display = 'none';
+        document.getElementById('pinModal').style.display = 'flex'; document.getElementById('context-menu').style.display = 'none';
     }
 
     async function confirmPin() {
@@ -348,41 +336,7 @@
         if(!error) { await _supabase.from('meetings').delete().eq('id', sel.id); closeModals(); loadDate(); }
     }
 
-    // --- NEW: DELETE HISTORY LOGIC ---
-    function startDelete() {
-        document.getElementById('context-menu').style.display = 'none';
-        document.getElementById('historyModal').style.display = 'flex';
-    }
-
-    async function finalizeDelete() {
-        const delName = document.getElementById('histName').value;
-        const delEmail = document.getElementById('histEmail').value;
-        if(!delName || !delEmail) return alert("Please provide details for history.");
-
-        // Log to history table
-        await _supabase.from('history').insert([{
-            deleted_by: delName,
-            deleter_email: delEmail,
-            original_booking: sel.data.booked_by,
-            agenda: sel.data.agenda,
-            room: sel.roomIdx === 0 ? "Big" : "Small",
-            time: sel.time,
-            action: "Delete"
-        }]);
-
-        const table = sel.isP ? 'permanent_meetings' : 'meetings';
-        await _supabase.from(table).delete().eq('id', sel.id);
-        
-        closeModals();
-        loadDate();
-    }
-
-    async function unpinBooking() {
-        if(!confirm("Remove permanent?")) return;
-        const { error } = await _supabase.from('permanent_meetings').delete().eq('id', sel.id);
-        if(!error) { loadDate(); document.getElementById('context-menu').style.display = 'none'; }
-    }
-
+    async function unpinBooking() { if(confirm("Remove?")) { await _supabase.from('permanent_meetings').delete().eq('id', sel.id); loadDate(); document.getElementById('context-menu').style.display = 'none'; } }
     function selectAllDays() { document.querySelectorAll('.day-chip').forEach(c => c.classList.add('active')); }
     function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
     window.onclick = (e) => { if(e.target.classList.contains('modal-overlay')) closeModals(); document.getElementById('context-menu').style.display = 'none'; };
