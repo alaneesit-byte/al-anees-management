@@ -250,26 +250,37 @@
         document.getElementById('dayDisplay').innerText = dayNames[new Date(curDate).getDay()];
         const [live, perm] = await Promise.all([_supabase.from('meetings').select('*').eq('date', curDate), _supabase.from('permanent_meetings').select('*').eq('day_name', curDayShort)]);
         const grid = document.getElementById('gridBody'); grid.innerHTML = '';
-        let d = new Date(); d.setHours(7, 0, 0);
+        
+        let d = new Date(); d.setHours(7, 0, 0, 0); // Start baseline
+
         for(let i=0; i<22; i++){
-            let s = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); d.setMinutes(d.getMinutes() + 30);
+            // Capture start time string
+            let s = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            d.setMinutes(d.getMinutes() + 30);
+            // Capture end time string
             let e = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-            const t = `${s} - ${e}`, tr = document.createElement('tr'); tr.innerHTML = `<td class="time-col">${t}</td>`;
+            const t = `${s} - ${e}`;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="time-col">${t}</td>`;
             for(let r=0; r<2; r++){
                 const room = r === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
-                const data = perm.data?.find(x => x.time_slot === t && x.room_name === room) || live.data?.find(x => x.time_slot === t && x.room_name === room);
-                const isP = perm.data?.some(x => x.time_slot === t && x.room_name === room), td = document.createElement('td'), slot = document.createElement('div');
+                const data = live.data?.find(x => x.time_slot === t && x.room_name === room) || perm.data?.find(x => x.time_slot === t && x.room_name === room);
+                const isP = perm.data?.some(x => x.time_slot === t && x.room_name === room);
+                const td = document.createElement('td'), slot = document.createElement('div');
+                
                 if(data) {
                     slot.className = isP ? "slot permanent" : "slot booked";
                     slot.innerHTML = `<b>${data.booked_by}</b><div style="font-size:10px;">${data.agenda}</div>`;
                     if(data.notes) slot.setAttribute('title', "Notes: " + data.notes);
-                    td.oncontextmenu = (e) => {
-                        e.preventDefault(); sel = { id: data.id, time: t, roomIdx: r, isP: isP, data: data };
-                        const menu = document.getElementById('context-menu'); menu.style.display = 'block'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px';
+                    td.oncontextmenu = (ev) => {
+                        ev.preventDefault(); sel = { id: data.id, time: t, roomIdx: r, isP: isP, data: data };
+                        const menu = document.getElementById('context-menu'); menu.style.display = 'block'; menu.style.left = ev.pageX + 'px'; menu.style.top = ev.pageY + 'px';
                         document.getElementById('pin-perm-btn').style.display = isP ? 'none' : 'block'; document.getElementById('unpin-perm-btn').style.display = isP ? 'block' : 'none';
                     };
                 } else {
-                    slot.className = "slot available"; slot.innerText = "Available"; slot.onclick = () => { isEditing = false; openBookingModal(t, r); };
+                    slot.className = "slot available"; slot.innerText = "Available"; 
+                    slot.onclick = () => { isEditing = false; sel = { time: t, roomIdx: r }; openBookingModal(); };
                 }
                 td.appendChild(slot); tr.appendChild(td);
             }
@@ -277,7 +288,7 @@
         }
     }
 
-    function openBookingModal(t, i) {
+    function openBookingModal() {
         document.getElementById('modalTitle').innerText = isEditing ? "Edit Booking" : "New Booking";
         document.getElementById('inputName').value = isEditing ? (sel.data.booked_by || "") : "";
         document.getElementById('inputEmail').value = isEditing ? (sel.data.email || "") : "";
@@ -295,13 +306,12 @@
         };
         const table = sel.isP ? 'permanent_meetings' : 'meetings';
         const { error } = isEditing ? await _supabase.from(table).update(payload).eq('id', sel.id) : await _supabase.from('meetings').insert([payload]);
-        if(!error) { closeModals(); loadDate(); isEditing = false; } else alert(error.message);
+        if(!error) { closeModals(); loadDate(); } else alert(error.message);
     }
 
     function startEdit() { 
         isEditing = true;
         document.getElementById('context-menu').style.display = 'none'; 
-        document.getElementById('histName').value = ""; document.getElementById('histEmail').value = "";
         document.getElementById('historyModal').style.display = 'flex';
         document.getElementById('histConfirmBtn').onclick = () => finalizeLogAction("Edit");
     }
@@ -309,29 +319,21 @@
     function startDelete() { 
         isEditing = false;
         document.getElementById('context-menu').style.display = 'none'; 
-        document.getElementById('histName').value = ""; document.getElementById('histEmail').value = "";
         document.getElementById('historyModal').style.display = 'flex';
         document.getElementById('histConfirmBtn').onclick = () => finalizeLogAction("Delete");
     }
 
-    async function finalizeLogAction(actionType) {
-        const delName = document.getElementById('histName').value, delEmail = document.getElementById('histEmail').value;
-        if(!delName || !delEmail) return alert("Details required for history log.");
-        
-        await _supabase.from('history').insert([{ 
-            deleted_by: delName, deleter_email: delEmail, 
-            original_booking: sel.data.booked_by, agenda: sel.data.agenda, 
-            room: sel.roomIdx === 0 ? "Big" : "Small", time: sel.time, action: actionType 
-        }]);
-
-        if(actionType === "Delete") {
+    async function finalizeLogAction(type) {
+        const n = document.getElementById('histName').value, em = document.getElementById('histEmail').value;
+        if(!n || !em) return alert("Required");
+        await _supabase.from('history').insert([{ deleted_by: n, deleter_email: em, original_booking: sel.data.booked_by, agenda: sel.data.agenda, room: sel.roomIdx === 0 ? "Big" : "Small", time: sel.time, action: type }]);
+        if(type === "Delete") {
             const table = sel.isP ? 'permanent_meetings' : 'meetings';
             await _supabase.from(table).delete().eq('id', sel.id);
             closeModals(); loadDate();
         } else {
-            // This is the fix: close the log modal and open the edit modal immediately
             document.getElementById('historyModal').style.display = 'none';
-            openBookingModal(sel.time, sel.roomIdx);
+            openBookingModal();
         }
     }
 
