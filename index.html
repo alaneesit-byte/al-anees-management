@@ -531,6 +531,45 @@
             m.classList.remove('active'); setTimeout(() => m.style.display = 'none', 300);
         });
     }
+    async function confirmBooking() {
+    const name = document.getElementById('inputName').value;
+    const email = document.getElementById('inputEmail').value;
+    const agenda = document.getElementById('inputAgenda').value;
+    const notes = document.getElementById('inputNotes').value;
+
+    if(!name || !agenda) {
+        alert("Please enter Name and Agenda");
+        return;
+    }
+
+    // This part sends the data to your 'meetings' table
+    const { error } = await _supabase.from('meetings').insert([{
+        date: datePicker.value,
+        time_slot: sel.time,
+        room_name: sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)",
+        booked_by: name,
+        email: email,
+        agenda: agenda,
+        notes: notes
+    }]);
+
+    if (!error) {
+        // This adds it to your activity log/history
+        await _supabase.from('meeting_history').insert([{
+            slot_id: sel.time,
+            slot_date: datePicker.value,
+            action_type: 'BOOKED',
+            user_name: name,
+            user_email: email,
+            reason: 'New booking created'
+        }]);
+        
+        closeModals();
+        loadDate(); // Refreshes the grid so the blue box appears
+    } else {
+        alert("Error saving: " + error.message);
+    }
+}
 
     window.onclick = (e) => { menu.style.display = 'none'; if(e.target.classList.contains('modal-overlay')) closeModals(); };
 </script>
