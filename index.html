@@ -446,11 +446,17 @@
         const shortDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const grid = document.getElementById('dayPickerGrid');
         
+        // Ensure the grid exists before trying to fill it
+        if (!grid) {
+            alert("Error: dayPickerGrid element not found in HTML.");
+            return;
+        }
+
         grid.innerHTML = shortDays.map(day => `
             <div class="day-chip" 
                  onclick="toggleDayChip(this)" 
                  data-day="${day}"
-                 style="padding: 10px; border: 1px solid #ddd; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s; font-weight: bold; background: white;">
+                 style="padding: 10px; border: 1px solid #ddd; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s; font-weight: bold; background: white; color: black; display: inline-block; width: 60px; margin: 5px;">
                 ${day}
             </div>
         `).join('');
@@ -483,7 +489,9 @@
     }
 
     async function confirmPin() {
-        const days = Array.from(document.querySelectorAll('.day-chip.active')).map(c => c.dataset.day);
+        const chips = document.querySelectorAll('.day-chip.active');
+        const days = Array.from(chips).map(c => c.dataset.day);
+        
         if(days.length === 0) return alert("Select at least one day");
         
         const roomName = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
@@ -508,8 +516,11 @@
                 reason: 'Permanent booking for: ' + days.join(', ')
             }]);
             if(!sel.isPerm) await _supabase.from('meetings').delete().eq('id', sel.id);
-            closeModals(); loadDate();
-        } else alert("Error: " + error.message);
+            closeModals(); 
+            loadDate();
+        } else {
+            alert("Error: " + error.message);
+        }
     }
 
     // --- 4. HISTORY, EDIT, & DELETE ---
