@@ -195,10 +195,10 @@
 <div class="modal-overlay" id="historyModal">
     <div class="modal-box">
         <h3>Log Action</h3>
-        <p style="font-size: 12px; text-align: center; color: #555;">Please enter your details to proceed with modifying this slot.</p>
+        <p style="font-size: 11px; text-align: center; color: #555; margin-bottom: 15px;">Provide your details to log this action in history.</p>
         <div class="modal-field"><label>Your Name</label><input type="text" id="histName"></div>
         <div class="modal-field"><label>Your Email</label><input type="email" id="histEmail"></div>
-        <button class="login-btn" id="histConfirmBtn">CONFIRM & PROCEED</button>
+        <button class="login-btn" id="histConfirmBtn">PROCEED</button>
         <button class="login-btn" style="background:#444; margin-top: 10px;" onclick="closeModals()">CANCEL</button>
     </div>
 </div>
@@ -278,11 +278,10 @@
     }
 
     function openBookingModal(t, i) {
-        sel = { time: t, roomIdx: i };
         document.getElementById('modalTitle').innerText = isEditing ? "Edit Booking" : "New Booking";
-        document.getElementById('inputName').value = isEditing ? sel.data.booked_by : "";
-        document.getElementById('inputEmail').value = isEditing ? sel.data.email : "";
-        document.getElementById('inputAgenda').value = isEditing ? sel.data.agenda : "";
+        document.getElementById('inputName').value = isEditing ? (sel.data.booked_by || "") : "";
+        document.getElementById('inputEmail').value = isEditing ? (sel.data.email || "") : "";
+        document.getElementById('inputAgenda').value = isEditing ? (sel.data.agenda || "") : "";
         document.getElementById('inputNotes').value = isEditing ? (sel.data.notes || "") : "";
         document.getElementById('bookingModal').style.display = 'flex';
     }
@@ -296,31 +295,43 @@
         };
         const table = sel.isP ? 'permanent_meetings' : 'meetings';
         const { error } = isEditing ? await _supabase.from(table).update(payload).eq('id', sel.id) : await _supabase.from('meetings').insert([payload]);
-        if(!error) { closeModals(); loadDate(); } else alert(error.message);
+        if(!error) { closeModals(); loadDate(); isEditing = false; } else alert(error.message);
     }
 
     function startEdit() { 
+        isEditing = true;
         document.getElementById('context-menu').style.display = 'none'; 
+        document.getElementById('histName').value = ""; document.getElementById('histEmail').value = "";
         document.getElementById('historyModal').style.display = 'flex';
         document.getElementById('histConfirmBtn').onclick = () => finalizeLogAction("Edit");
     }
 
     function startDelete() { 
+        isEditing = false;
         document.getElementById('context-menu').style.display = 'none'; 
+        document.getElementById('histName').value = ""; document.getElementById('histEmail').value = "";
         document.getElementById('historyModal').style.display = 'flex';
         document.getElementById('histConfirmBtn').onclick = () => finalizeLogAction("Delete");
     }
 
     async function finalizeLogAction(actionType) {
         const delName = document.getElementById('histName').value, delEmail = document.getElementById('histEmail').value;
-        if(!delName || !delEmail) return alert("Details required.");
-        await _supabase.from('history').insert([{ deleted_by: delName, deleter_email: delEmail, original_booking: sel.data.booked_by, agenda: sel.data.agenda, room: sel.roomIdx === 0 ? "Big" : "Small", time: sel.time, action: actionType }]);
+        if(!delName || !delEmail) return alert("Details required for history log.");
+        
+        await _supabase.from('history').insert([{ 
+            deleted_by: delName, deleter_email: delEmail, 
+            original_booking: sel.data.booked_by, agenda: sel.data.agenda, 
+            room: sel.roomIdx === 0 ? "Big" : "Small", time: sel.time, action: actionType 
+        }]);
+
         if(actionType === "Delete") {
             const table = sel.isP ? 'permanent_meetings' : 'meetings';
             await _supabase.from(table).delete().eq('id', sel.id);
             closeModals(); loadDate();
         } else {
-            isEditing = true; document.getElementById('historyModal').style.display = 'none'; openBookingModal(sel.time, sel.roomIdx);
+            // This is the fix: close the log modal and open the edit modal immediately
+            document.getElementById('historyModal').style.display = 'none';
+            openBookingModal(sel.time, sel.roomIdx);
         }
     }
 
@@ -338,7 +349,7 @@
 
     async function unpinBooking() { if(confirm("Remove?")) { await _supabase.from('permanent_meetings').delete().eq('id', sel.id); loadDate(); document.getElementById('context-menu').style.display = 'none'; } }
     function selectAllDays() { document.querySelectorAll('.day-chip').forEach(c => c.classList.add('active')); }
-    function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
+    function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); isEditing = false; }
     window.onclick = (e) => { if(e.target.classList.contains('modal-overlay')) closeModals(); document.getElementById('context-menu').style.display = 'none'; };
     window.onload = () => { document.getElementById('datePicker').value = new Date().toISOString().split('T')[0]; };
 </script>
