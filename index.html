@@ -288,6 +288,50 @@
         }
     }
 
+    // --- UPDATED UNPIN LOGIC ---
+
+  async function startUnpin() {
+    // We create a custom choice using a simple browser confirm-style flow
+    // For a better UI, we use a template literal or a simple prompt for now
+    const choice = confirm("Press OK to unpin PERMANENTLY (removes from all weeks).\nPress CANCEL to unpin for TODAY ONLY.");
+
+    if (choice) {
+        // OPTION: PERMANENT
+        // This removes the entry from the permanent_meetings table
+        const dayNameShort = dayNames[new Date(document.getElementById('datePicker').value).getDay()].substring(0,3);
+        
+        const { error } = await _supabase
+            .from('permanent_meetings')
+            .delete()
+            .eq('time_slot', sel.time)
+            .eq('room_name', sel.room)
+            .eq('day_name', dayNameShort);
+
+        if(!error) {
+            alert("Unpinned permanently from all " + dayNames[new Date(document.getElementById('datePicker').value).getDay()] + "s.");
+            loadDate();
+        }
+    } else {
+        // OPTION: TEMPORARY (Today Only)
+        // This removes it from the 'meetings' table for the current date only
+        const date = document.getElementById('datePicker').value;
+        
+        const { error } = await _supabase
+            .from('meetings')
+            .delete()
+            .eq('date', date)
+            .eq('time_slot', sel.time)
+            .eq('room_name', sel.room);
+
+        if(!error) {
+            alert("Unpinned for today only.");
+            loadDate();
+        }
+    }
+}
+// Ensure your context menu button calls this function:
+// <button onclick="startUnpin()" style="color:orange;">📌 Unpin Slot</button>
+
     function openBookingModal() {
         document.getElementById('modalTitle').innerText = isEditing ? "Edit Booking" : "New Booking";
         document.getElementById('inputName').value = isEditing ? (sel.data.booked_by || "") : "";
