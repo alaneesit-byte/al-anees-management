@@ -74,6 +74,14 @@
         .center-section { text-align: center; flex-grow: 1; }
         .center-section h1 { margin: 0 0 10px 0; font-family: 'Audiowide', cursive; font-size: 22px; color: var(--primary-navy); text-transform: uppercase; }
         
+        /* LEGEND STYLES */
+        .legend-container { display: flex; justify-content: center; gap: 20px; margin-top: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 700; color: var(--primary-navy); text-transform: uppercase; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
+        .dot.available { background: #fff; }
+        .dot.booked { background: var(--booked-blue); }
+        .dot.permanent { background: var(--pin-gold); }
+
         .date-container { display: flex; align-items: center; justify-content: center; gap: 10px; }
         input[type="date"] { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.4); backdrop-filter: blur(5px); font-weight: 600; font-family: 'Inter'; font-size: 14px; outline: none; }
         .day-display-box { padding: 8px 15px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.4); font-weight: 700; font-size: 14px; color: var(--al-anees-blue); min-width: 100px; text-align: center; }
@@ -164,6 +172,11 @@
                 <div class="date-container">
                     <input type="date" id="datePicker" onchange="loadDate()">
                     <div id="dayDisplay" class="day-display-box">Today</div>
+                </div>
+                <div class="legend-container">
+                    <div class="legend-item"><div class="dot available"></div>Available</div>
+                    <div class="legend-item"><div class="dot booked"></div>Booked</div>
+                    <div class="legend-item"><div class="dot permanent"></div>Permanent</div>
                 </div>
             </div>
             <div class="nav-section">
@@ -361,10 +374,8 @@
     async function confirmPin() {
         const selectedChips = Array.from(document.querySelectorAll('.day-chip.active'));
         const days = selectedChips.map(c => c.dataset.day);
-        const fullNames = selectedChips.map(c => c.dataset.full);
         const room = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
 
-        // CHECK FOR CONFLICTS
         const { data: conflicts } = await _supabase.from('permanent_meetings').select('day_name').eq('time_slot', sel.time).eq('room_name', room).in('day_name', days);
         
         if(conflicts && conflicts.length > 0) {
