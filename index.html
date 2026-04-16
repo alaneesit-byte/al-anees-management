@@ -113,14 +113,13 @@
         .day-chip { padding: 12px; border: 1px solid rgba(255,255,255,0.3); border-radius: 12px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); font-weight: bold; transition: 0.3s; }
         .day-chip.active { background: var(--al-anees-blue); color: white; }
 
+        #choiceModal .choice-btn-container { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        #choiceModal .btn-today { background: #6c757d; color: white; }
+        #choiceModal .btn-forever { background: #d9534f; color: white; }
+
         #context-menu { position: absolute; display: none; background: white; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); padding: 10px; min-width: 200px; z-index: 10000; border: 1px solid #ddd; }
         #context-menu button { display: block; width: 100%; text-align: left; padding: 10px 15px; border: none; background: none; cursor: pointer; font-size: 14px; border-radius: 6px; }
         #context-menu button:hover { background: #f0f4f8; }
-
-        /* Style for Choice Modal Buttons */
-        .choice-btn-container { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-        .btn-today { background: #6c757d; color: white; }
-        .btn-forever { background: #d9534f; color: white; }
     </style>
 </head>
 <body>
@@ -305,32 +304,18 @@
         }
     }
 
-    // --- NEW CHOICE MODAL LOGIC ---
-    function openChoiceModal() {
-        document.getElementById('choiceModal').style.display = 'flex';
-        document.getElementById('context-menu').style.display = 'none';
-    }
+    function openChoiceModal() { document.getElementById('choiceModal').style.display = 'flex'; document.getElementById('context-menu').style.display = 'none'; }
 
     async function finalizeUnpin(type) {
         if(type === 'forever') {
             const dayNameShort = dayNames[new Date(document.getElementById('datePicker').value).getDay()].substring(0,3);
-            const { error } = await _supabase.from('permanent_meetings').delete()
-                .eq('time_slot', sel.time)
-                .eq('room_name', sel.room)
-                .eq('day_name', dayNameShort);
+            const { error } = await _supabase.from('permanent_meetings').delete().eq('time_slot', sel.time).eq('room_name', sel.room).eq('day_name', dayNameShort);
             if(!error) alert("Removed permanently.");
         } else {
-            const date = document.getElementById('datePicker').value;
-            // Inserting a record into history/meetings as a "cancelled" or simply deleting current slot
-            // To 'unpin' for today we actually just need to make sure no record exists in 'meetings' for this slot
-            const { error } = await _supabase.from('meetings').delete()
-                .eq('date', date)
-                .eq('time_slot', sel.time)
-                .eq('room_name', sel.room);
+            const { error } = await _supabase.from('meetings').delete().eq('date', document.getElementById('datePicker').value).eq('time_slot', sel.time).eq('room_name', sel.room);
             if(!error) alert("Unpinned for today.");
         }
-        closeModals();
-        loadDate();
+        closeModals(); loadDate();
     }
 
     function openBookingModal() {
@@ -354,19 +339,8 @@
         if(!error) { closeModals(); loadDate(); } else alert(error.message);
     }
 
-    function startEdit() { 
-        isEditing = true;
-        document.getElementById('context-menu').style.display = 'none'; 
-        document.getElementById('historyModal').style.display = 'flex';
-        document.getElementById('histConfirmBtn').onclick = () => finalizeLogAction("Edit");
-    }
-
-    function startDelete() { 
-        isEditing = false;
-        document.getElementById('context-menu').style.display = 'none'; 
-        document.getElementById('historyModal').style.display = 'flex';
-        document.getElementById('histConfirmBtn').onclick = () => finalizeLogAction("Delete");
-    }
+    function startEdit() { isEditing = true; document.getElementById('context-menu').style.display = 'none'; document.getElementById('historyModal').style.display = 'flex'; document.getElementById('histConfirmBtn').onclick = () => finalizeLogAction("Edit"); }
+    function startDelete() { isEditing = false; document.getElementById('context-menu').style.display = 'none'; document.getElementById('historyModal').style.display = 'flex'; document.getElementById('histConfirmBtn').onclick = () => finalizeLogAction("Delete"); }
 
     async function finalizeLogAction(type) {
         const n = document.getElementById('histName').value, em = document.getElementById('histEmail').value;
@@ -376,20 +350,30 @@
             const table = sel.isP ? 'permanent_meetings' : 'meetings';
             await _supabase.from(table).delete().eq('id', sel.id);
             closeModals(); loadDate();
-        } else {
-            document.getElementById('historyModal').style.display = 'none';
-            openBookingModal();
-        }
+        } else { document.getElementById('historyModal').style.display = 'none'; openBookingModal(); }
     }
 
     function openPinModal() {
-        document.getElementById('dayPickerGrid').innerHTML = dayNames.map(d => `<div class="day-chip" onclick="this.classList.toggle('active')" data-day="${d.substring(0,3)}">${d}</div>`).join('');
+        document.getElementById('dayPickerGrid').innerHTML = dayNames.map(d => `<div class="day-chip" onclick="this.classList.toggle('active')" data-day="${d.substring(0,3)}" data-full="${d}">${d}</div>`).join('');
         document.getElementById('pinModal').style.display = 'flex'; document.getElementById('context-menu').style.display = 'none';
     }
 
     async function confirmPin() {
-        const days = Array.from(document.querySelectorAll('.day-chip.active')).map(c => c.dataset.day);
-        const pinData = days.map(d => ({ day_name: d, time_slot: sel.time, room_name: sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)", booked_by: sel.data.booked_by, agenda: sel.data.agenda, email: sel.data.email }));
+        const selectedChips = Array.from(document.querySelectorAll('.day-chip.active'));
+        const days = selectedChips.map(c => c.dataset.day);
+        const fullNames = selectedChips.map(c => c.dataset.full);
+        const room = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
+
+        // CHECK FOR CONFLICTS
+        const { data: conflicts } = await _supabase.from('permanent_meetings').select('day_name').eq('time_slot', sel.time).eq('room_name', room).in('day_name', days);
+        
+        if(conflicts && conflicts.length > 0) {
+            const takenDays = conflicts.map(c => dayNames.find(d => d.startsWith(c.day_name))).join(", ");
+            alert(`Conflict: On ${takenDays}, this slot is already pinned! Please unselect these days to proceed.`);
+            return;
+        }
+
+        const pinData = days.map(d => ({ day_name: d, time_slot: sel.time, room_name: room, booked_by: sel.data.booked_by, agenda: sel.data.agenda, email: sel.data.email }));
         const { error } = await _supabase.from('permanent_meetings').insert(pinData);
         if(!error) { await _supabase.from('meetings').delete().eq('id', sel.id); closeModals(); loadDate(); }
     }
