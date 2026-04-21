@@ -263,19 +263,30 @@
 </div>
 
 <script>
-    // --- 1. AUTHORIZED STAFF ---
+    // --- 1. AUTHORIZED STAFF (OTP Recipients) ---
     const AUTHORIZED_STAFF = [
-        { name: "Finance Manager", email: "financemanager@alaneesgroup.com" },
-        { name: "MUHSIN MOHAMED", email: "muhsinpc@alaneesgroup.com" },
-        { name: "Hashim", email: "hashim@alaneesgroup.com" },
-        { name: "Hisham", email: "hisham@alaneesgroup.com" },
-        { name: "Mohammed Hameem", email: "hameem@alaneesgroup.com" },
-        { name: "Haris K Ali", email: "hr@alaneesgroup.com" },
-        { name: "Muhsin vp", email: "muhsinvp@alaneesgroup.com" },
-        { name: "Mohammed Riyas", email: "riyas@alaneeqatar.qa" },
-        { name: "IT Support", email: "alaneesit@gmail.com" },
-        { name: "Junaid", email: "itadministrator@alaneesgroup.com" }
+        { name: "Riyas - Operation", email: "riyas@alaneeqatar.qa" },
+        { name: "Nahiyan - Finance", email: "financemanager@alaneesgroup.com" },
+        { name: "Hameem - Procurement", email: "hameem@alaneesgroup.com" },
+        { name: "Muhsin vp - Ooredoo", email: "muhsinvp@alaneesgroup.com" },
+        { name: "MUHSIN pc - Retail", email: "muhsinpc@alaneesgroup.com" },
+        { name: "Haris - HR", email: "hr@alaneesgroup.com" },
     ];
+
+    // --- 1.2 DIRECT ACCESS EMAILS (Instant entry via Access ID) ---
+    const DIRECT_ACCESS_EMAILS = [
+        "riyas@alaneeqatar.qa",
+        "alaneesit@gmail.com",
+        "itadministrator@alaneesgroup.com",
+        "financemanager@alaneesgroup.com",
+        "muhsinpc@alaneesgroup.com",
+        "hashim@alaneesgroup.com",
+        "hisham@alaneesgroup.com",
+        "hameem@alaneesgroup.com",
+        "hr@alaneesgroup.com",
+        "muhsinvp@alaneesgroup.com"
+    ];
+
     const ALLOWED_EMAILS = AUTHORIZED_STAFF.map(s => s.email);
 
     // --- 2. CONFIG ---
@@ -294,7 +305,8 @@
 
     // --- 3. SECURITY GATEKEEPER ---
     function runSecure(actionCallback) {
-        if (activeUserEmail && ALLOWED_EMAILS.includes(activeUserEmail)) {
+        // If user is already verified and in the direct access or authorized lists, proceed
+        if (activeUserEmail && (DIRECT_ACCESS_EMAILS.includes(activeUserEmail) || ALLOWED_EMAILS.includes(activeUserEmail))) {
             actionCallback();
             return;
         }
@@ -306,8 +318,14 @@
         const idInput = prompt("Enter Authorized Access ID:");
         if (!idInput) return;
         const cleanId = idInput.trim().toLowerCase();
-        if (ALLOWED_EMAILS.includes(cleanId)) { verifySuccess(cleanId); } 
-        else { alert("ACCESS DENIED"); }
+        
+        // CHECK DIRECT ACCESS LIST
+        if (DIRECT_ACCESS_EMAILS.includes(cleanId)) { 
+            verifySuccess(cleanId); 
+        } 
+        else { 
+            alert("ACCESS DENIED"); 
+        }
     }
 
     function openOtpUserList() {
@@ -327,39 +345,33 @@
     }
 
     async function submitRequesterName() {
-    pendingRequesterName = document.getElementById('reqInputName').value.trim();
-    
-    if (!pendingRequesterName) {
-        return alert("Please enter your name.");
-    }
-
-    document.getElementById('requesterNameModal').style.display = 'none';
-    
-    // Generate a random 6-digit code
-    generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-
-    console.log("Sending OTP to:", pendingTargetEmail);
-
-    try {
-        // --- STEP 1: SEND OTP VIA EMAILJS ---
-        // Using the "One-Time Password" template as you specified
-        await emailjs.send("service_nvgioq5", "template_yjywnjc", {
-            to_name: pendingTargetName,
-            to_email: pendingTargetEmail,    // The staff member's email
-            from_name: pendingRequesterName, // Your name
-            otp_code: generatedOTP           // The 6-digit code
-        });
-
-        // --- STEP 2: SHOW THE VERIFICATION MODAL ---
-        document.getElementById('otpMessage').innerText = `Code sent to ${pendingTargetName}`;
-        document.getElementById('otpInputCode').value = "";
-        document.getElementById('otpVerifyModal').style.display = 'flex';
+        pendingRequesterName = document.getElementById('reqInputName').value.trim();
         
-    } catch (err) {
-        console.error("OTP Error:", err);
-        alert("Failed to send OTP code: " + (err.text || "Check your internet or EmailJS quota."));
+        if (!pendingRequesterName) {
+            return alert("Please enter your name.");
+        }
+
+        document.getElementById('requesterNameModal').style.display = 'none';
+        
+        generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+
+        try {
+            await emailjs.send("service_nvgioq5", "template_yjywnjc", {
+                to_name: pendingTargetName,
+                to_email: pendingTargetEmail,
+                from_name: pendingRequesterName,
+                otp_code: generatedOTP
+            });
+
+            document.getElementById('otpMessage').innerText = `Code sent to ${pendingTargetName}`;
+            document.getElementById('otpInputCode').value = "";
+            document.getElementById('otpVerifyModal').style.display = 'flex';
+            
+        } catch (err) {
+            console.error("OTP Error:", err);
+            alert("Failed to send OTP code: " + (err.text || "Check your internet or EmailJS quota."));
+        }
     }
-}
 
     function submitOtpCode() {
         if (document.getElementById('otpInputCode').value.trim() === generatedOTP) {
@@ -379,12 +391,16 @@
     // --- 4. CORE UI ---
     async function loadDate() {
         const curDate = document.getElementById('datePicker').value;
-        const curDayShort = dayNames[new Date(curDate).getDay()].substring(0,3);
-        document.getElementById('dayDisplay').innerText = dayNames[new Date(curDate).getDay()];
+        if(!curDate) return;
+        const dateObj = new Date(curDate);
+        const curDayShort = dayNames[dateObj.getDay()].substring(0,3);
+        document.getElementById('dayDisplay').innerText = dayNames[dateObj.getDay()];
+        
         const [live, perm] = await Promise.all([
             _supabase.from('meetings').select('*').eq('date', curDate), 
             _supabase.from('permanent_meetings').select('*').eq('day_name', curDayShort)
         ]);
+        
         const grid = document.getElementById('gridBody'); grid.innerHTML = '';
         let d = new Date(); d.setHours(7, 0, 0, 0); 
         for(let i=0; i<22; i++){
@@ -423,76 +439,68 @@
     }
 
     // --- 5. BOOKING LOGIC ---
-   async function confirmBooking() {
-    const date = document.getElementById('datePicker').value;
-    const roomName = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
-    const bookedBy = document.getElementById('inputName').value.trim();
-    const agenda = document.getElementById('inputAgenda').value.trim();
-    const ccEmails = document.getElementById('inputCC').value.trim(); 
-    const notes = document.getElementById('inputNotes').value;
+    async function confirmBooking() {
+        const date = document.getElementById('datePicker').value;
+        const roomName = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
+        const bookedBy = document.getElementById('inputName').value.trim();
+        const agenda = document.getElementById('inputAgenda').value.trim();
+        const ccEmails = document.getElementById('inputCC').value.trim(); 
+        const notes = document.getElementById('inputNotes').value;
 
-    if (!bookedBy || !agenda) return alert("Name and Agenda are required.");
+        if (!bookedBy || !agenda) return alert("Name and Agenda are required.");
 
-    // --- OUTLOOK CALENDAR LINK LOGIC ---
-    const timeParts = sel.time.split(" - ");
-    
-    function formatToOutlook(dateStr, timeStr) {
-        const dateObj = new Date(`${dateStr} ${timeStr}`);
-        return dateObj.toISOString(); 
-    }
+        const timeParts = sel.time.split(" - ");
+        function formatToOutlook(dateStr, timeStr) {
+            const dateObj = new Date(`${dateStr} ${timeStr}`);
+            return dateObj.toISOString(); 
+        }
 
-    const startISO = formatToOutlook(date, timeParts[0]);
-    const endISO = formatToOutlook(date, timeParts[1]);
+        const startISO = formatToOutlook(date, timeParts[0]);
+        const endISO = formatToOutlook(date, timeParts[1]);
+        const bodyContent = `Location: ${roomName}%0ABooked by: ${bookedBy}%0ANotes: ${notes}`;
+        const outlookURL = `https://outlook.office.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(agenda)}&body=${bodyContent}&location=${encodeURIComponent(roomName)}&startdt=${startISO}&enddt=${endISO}`;
 
-    // Use %0A for clean line breaks in the Outlook body
-    const bodyContent = `Location: ${roomName}%0ABooked by: ${bookedBy}%0ANotes: ${notes}`;
-
-    const outlookURL = `https://outlook.office.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(agenda)}&body=${bodyContent}&location=${encodeURIComponent(roomName)}&startdt=${startISO}&enddt=${endISO}`;
-
-    const payload = { 
-        date: date, 
-        time_slot: sel.time, 
-        room_name: roomName, 
-        booked_by: bookedBy, 
-        email: activeUserEmail, 
-        agenda: agenda, 
-        notes: notes,
-        cc_emails: ccEmails 
-    };
-
-    // --- SAVE TO DATABASE ---
-    let result;
-    if (isEditing && sel.id) {
-        result = await _supabase.from('meetings').update(payload).eq('id', sel.id);
-    } else {
-        result = await _supabase.from('meetings').insert([payload]);
-    }
-
-    if (result.error) return alert("Database Error: " + result.error.message);
-
-    // --- SEND EMAIL ---
-    try {
-        await emailjs.send("service_nvgioq5", "template_iskedxw", {
-            to_email: "alaneesit@gmail.com",
-            cc_emails: ccEmails,
-            booked_by: bookedBy,
-            room_name: roomName,
-            date: date,
-            time_slot: sel.time,
-            agenda: agenda,
+        const payload = { 
+            date: date, 
+            time_slot: sel.time, 
+            room_name: roomName, 
+            booked_by: bookedBy, 
+            email: activeUserEmail, 
+            agenda: agenda, 
             notes: notes,
-            calendar_link: outlookURL 
-        });
-        
-        alert("Booking Successful! The slot is reserved and email sent.");
-        
-    } catch (err) {
-        alert("Slot saved, but email failed: " + err.text);
+            cc_emails: ccEmails 
+        };
+
+        let result;
+        if (isEditing && sel.id) {
+            result = await _supabase.from('meetings').update(payload).eq('id', sel.id);
+        } else {
+            result = await _supabase.from('meetings').insert([payload]);
+        }
+
+        if (result.error) return alert("Database Error: " + result.error.message);
+
+        try {
+            await emailjs.send("service_nvgioq5", "template_iskedxw", {
+                to_email: "alaneesit@gmail.com",
+                cc_emails: ccEmails,
+                booked_by: bookedBy,
+                room_name: roomName,
+                date: date,
+                time_slot: sel.time,
+                agenda: agenda,
+                notes: notes,
+                calendar_link: outlookURL 
+            });
+            alert("Booking Successful! The slot is reserved and email sent.");
+        } catch (err) {
+            alert("Slot saved, but email failed: " + err.text);
+        }
+
+        closeModals(); 
+        loadDate();
     }
 
-    closeModals(); 
-    loadDate();
-}
     function openBookingModal() {
         document.getElementById('modalTitle').innerText = isEditing ? "Edit Booking" : "New Booking";
         document.getElementById('inputName').value = isEditing ? (sel.data.booked_by || "") : "";
@@ -514,17 +522,23 @@
     }
 
     function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
+    
     function changeDate(days) { 
         let d = new Date(document.getElementById('datePicker').value); 
         d.setDate(d.getDate() + days); 
         document.getElementById('datePicker').value = d.toISOString().split('T')[0]; 
         loadDate(); 
     }
+
     window.onload = () => { 
         document.getElementById('datePicker').value = new Date().toISOString().split('T')[0]; 
         loadDate(); 
     };
-    window.onclick = (e) => { if(e.target.classList.contains('modal-overlay')) closeModals(); document.getElementById('context-menu').style.display = 'none'; };
+
+    window.onclick = (e) => { 
+        if(e.target.classList.contains('modal-overlay')) closeModals(); 
+        document.getElementById('context-menu').style.display = 'none'; 
+    };
 </script>
-</body>         
+</body>          
 </html>
