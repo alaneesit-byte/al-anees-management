@@ -3,525 +3,393 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Al Anees - Meeting Management</title>
+    <title>Al Anees - Executive Meeting System</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Audiowide&display=swap" rel="stylesheet">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --primary-navy: #1a3a5a;
-            --booked-blue: #007bff;
-            --pin-gold: #ffc107;
-            --border-color: rgba(255, 255, 255, 0.3);
-            --al-anees-blue: #1c5fa8;
-            --al-anees-orange: #ff8c00; 
-            --glass-bg: rgba(255, 255, 255, 0.2);
-            --glass-border: rgba(255, 255, 255, 0.4);
-            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-        }
-
-        body { 
-            font-family: 'Inter', sans-serif; 
-            margin: 0; padding: 0; min-height: 100vh; user-select: none;
-            background: linear-gradient(-45deg, #f4f7f9, #e0eafc, #cfdef3, #f4f7f9);
-            background-size: 400% 400%; animation: liquidGradient 15s ease infinite;
-            background-attachment: fixed; display: flex; justify-content: center; align-items: center;
-        }
-
-        @keyframes liquidGradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        #main-system { display: block; width: 100%; padding: 20px; box-sizing: border-box; }
-        .container { max-width: 1400px; margin: 0 auto; position: relative; z-index: 1; }
-        
-        .header { 
-            background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(15px);
-            padding: 10px 30px; border-radius: 20px; box-shadow: var(--glass-shadow); 
-            margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid var(--glass-border); position: relative; overflow: hidden;
-        }
-
-        .brand-section { display: flex; align-items: center; min-width: 290px; }
-        .brand-logo { height: 90px; width: auto; object-fit: contain; }
-
-        .center-section { text-align: center; flex-grow: 1; }
-        .center-section h1 { margin: 0 0 10px 0; font-family: 'Audiowide', cursive; font-size: 22px; color: var(--primary-navy); text-transform: uppercase; }
-        
-        .legend-container { display: flex; justify-content: center; gap: 20px; margin-top: 10px; }
-        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 700; color: var(--primary-navy); text-transform: uppercase; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
-        .dot.available { background: #fff; }
-        .dot.booked { background: var(--booked-blue); }
-        .dot.permanent { background: var(--pin-gold); }
-
-        .date-container { display: flex; align-items: center; justify-content: center; gap: 10px; }
-        input[type="date"] { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.4); backdrop-filter: blur(5px); font-weight: 600; font-family: 'Inter'; font-size: 14px; outline: none; }
-        .day-display-box { padding: 8px 15px; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(255,255,255,0.4); font-weight: 700; font-size: 14px; color: var(--al-anees-blue); min-width: 100px; text-align: center; }
-
-        .nav-section { display: flex; flex-direction: column; gap: 5px; min-width: 120px; }
-        .nav-btn { background: rgba(255,255,255,0.8); border: 1px solid #000; color: #000; cursor: pointer; font-weight: 700; padding: 5px 20px; border-radius: 5px; font-size: 11px; text-transform: uppercase; transition: 0.3s; }
-        .nav-btn:hover { background: #000; color: #fff; transform: scale(1.05); }
-
-        .spreadsheet { 
-            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px);
-            border-radius: 20px; box-shadow: var(--glass-shadow); overflow: hidden; border: 1px solid var(--glass-border);
-        }
-
+        :root { --primary-navy: #1a3a5a; --booked-blue: #007bff; --al-anees-blue: #1c5fa8; --glass-border: rgba(255, 255, 255, 0.4); }
+        body { font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; background: linear-gradient(-45deg, #f4f7f9, #e0eafc, #cfdef3, #f4f7f9); background-size: 400% 400%; animation: liquidGradient 15s ease infinite; display: flex; justify-content: center; align-items: center; }
+        @keyframes liquidGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .container { width: 100%; max-width: 1400px; padding: 20px; }
+        .header { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(15px); padding: 15px 30px; border-radius: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--glass-border); }
+        .pinned-slot { background: linear-gradient(135deg, #fff9e6, #ffc107) !important; border-left: 6px solid #b8860b !important; color: #856404 !important; }
+        .date-controls { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .nav-btn { background: white; border: 1px solid #ccc; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .nav-btn:hover { background: var(--al-anees-blue); color: white; }
+        .brand-logo { height: 70px; }
+        .spreadsheet { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px); border-radius: 20px; overflow: hidden; border: 1px solid var(--glass-border); }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th { background: rgba(255, 255, 255, 0.3); padding: 20px; border-bottom: 2px solid var(--border-color); color: var(--primary-navy); font-size: 12px; text-transform: uppercase; font-weight: 800; }
-        td { border: 1px solid var(--border-color); height: 95px; padding: 12px; vertical-align: middle; position: relative; }
-        .time-col { width: 220px; text-align: center; font-weight: 800; color: #333; background: rgba(255,255,255,0.2); font-size: 13px; border-right: 2px solid var(--border-color); }
-        
-        .slot { 
-            width: 100%; height: 100%; border-radius: 12px; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2); box-sizing: border-box; text-align: center;
-        }
-
-        .slot:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .available { background: rgba(255, 255, 255, 0.2); color: rgba(0,0,0,0.3); font-size: 11px; font-weight: 600; }
-        .booked { background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(10px); color: var(--primary-navy); border-left: 6px solid var(--booked-blue) !important; }
-        .permanent { background: rgba(255, 254, 240, 0.7) !important; border: 1px solid var(--pin-gold) !important; border-left: 8px solid var(--pin-gold) !important; }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.25); backdrop-filter: blur(15px); display: none; justify-content: center; align-items: center; z-index: 2000; }
-        .modal-box { background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(25px); padding: 35px; border-radius: 35px; width: 400px; border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15); max-height: 90vh; overflow-y: auto; }
-        .modal-box h3 { font-family: 'Audiowide'; color: var(--al-anees-blue); text-align: center; margin-bottom: 20px; }
+        th { background: rgba(255, 255, 255, 0.3); padding: 15px; color: var(--primary-navy); font-size: 12px; }
+        td { border: 1px solid rgba(255,255,255,0.3); height: 90px; padding: 10px; }
+        .slot { width: 100%; height: 100%; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; position: relative; }
+        .available { background: rgba(255, 255, 255, 0.2); color: rgba(0,0,0,0.3); font-weight: 600; font-size: 11px; }
+        .available:hover { background: rgba(255, 255, 255, 0.4); color: var(--al-anees-blue); }
+        .booked { background: white; border-left: 6px solid var(--booked-blue); box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-align: center; overflow: hidden; }
+        .pin-icon { position: absolute; top: 5px; right: 8px; font-size: 14px; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal-box { background: white; padding: 30px; border-radius: 25px; width: 450px; max-height: 90vh; overflow-y: auto; }
         .modal-field { margin-bottom: 15px; }
-        .modal-field label { display: block; font-size: 11px; font-weight: 800; color: var(--primary-navy); text-transform: uppercase; margin-bottom: 5px; }
-        .modal-field input, .modal-field textarea { width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); border-radius: 12px; background: rgba(255,255,255,0.5); outline: none; box-sizing: border-box; }
-
-        .day-chip { padding: 12px; border: 1px solid rgba(255,255,255,0.3); border-radius: 12px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); font-weight: bold; transition: 0.3s; }
-        .day-chip.active { background: var(--al-anees-blue); color: white; }
-
-        .login-btn { 
-            width: 100%; padding: 15px; background: var(--al-anees-blue); color: white; border: none; 
-            border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s; 
-        }
-
-        #choiceModal .choice-btn-container { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-        #choiceModal .btn-today { background: #6c757d; color: white; }
-        #choiceModal .btn-forever { background: #d9534f; color: white; }
-
-        #context-menu { position: absolute; display: none; background: white; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); padding: 10px; min-width: 200px; z-index: 10000; border: 1px solid #ddd; }
-        #context-menu button { display: block; width: 100%; text-align: left; padding: 10px 15px; border: none; background: none; cursor: pointer; font-size: 14px; border-radius: 6px; }
-        #context-menu button:hover { background: #f0f4f8; }
-
-        /* OTP List Styling */
-        .otp-name-item { 
-            padding: 12px; background: rgba(255,255,255,0.4); border-radius: 10px; 
-            margin-bottom: 5px; cursor: pointer; font-size: 13px; font-weight: 700;
-            color: var(--primary-navy); border: 1px solid rgba(0,0,0,0.05); transition: 0.2s;
-        }
-        .otp-name-item:hover { background: var(--al-anees-blue); color: white; }
+        .modal-field label { display: block; font-size: 11px; font-weight: 800; margin-bottom: 6px; color: #333; text-transform: uppercase; }
+        .modal-field input, .modal-field textarea, .modal-field select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-family: inherit; }
+        .replica-container { background: #f8fbff; border: 2px dashed #d0e1f9; border-radius: 15px; padding: 15px; margin: 15px 0; }
+        .btn-save { width: 100%; padding: 15px; background: var(--al-anees-blue); color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 14px; }
+        .btn-cancel { width: 100%; padding: 15px; background: #666; color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 14px; margin-top: 10px; }
+        #context-menu { position: absolute; display: none; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 8px; z-index: 3000; border: 1px solid #eee; }
+        #context-menu button { display: block; width: 100%; padding: 12px; border: none; background: none; text-align: left; cursor: pointer; font-weight: 600; font-size: 13px; border-radius: 8px; width: 180px; }
+        #context-menu button:hover { background: #f4f7f9; color: var(--al-anees-blue); }
+        .otp-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; font-weight: 600; }
+        .otp-item:hover { background: #f0f7ff; color: var(--al-anees-blue); }
+        
+        /* Multi-select Specific Styles */
+        .day-btn-selected { background: var(--al-anees-blue) !important; color: white !important; border-color: var(--al-anees-blue) !important; }
     </style>
 </head>
 <body>
 
-<div id="main-system">
-    <div class="container">
-        <div class="header">
-            <div class="brand-section">
-                <img src="alaneesqatar_cover.jpg" alt="Al Anees Logo" class="brand-logo">
-            </div>
-            <div class="center-section">
-                <h1>Meeting Management</h1>
-                <div class="date-container">
-                    <input type="date" id="datePicker" onchange="loadDate()">
-                    <div id="dayDisplay" class="day-display-box">Today</div>
-                </div>
-                <div class="legend-container">
-                    <div class="legend-item"><div class="dot available"></div>Available</div>
-                    <div class="legend-item"><div class="dot booked"></div>Booked</div>
-                    <div class="legend-item"><div class="dot permanent"></div>Permanent</div>
-                </div>
-            </div>
-            <div class="nav-section">
-                <button class="nav-btn" onclick="changeDate(1)">Next</button>
-                <button class="nav-btn" onclick="changeDate(-1)">Previous</button>
-                <button id="logoutBtn" class="nav-btn" style="background:#ff4d4d; color:white; border:none; display:none; margin-top:5px;" onclick="logout()">Logout</button>
-            </div>
-        </div>
-
-        <div class="spreadsheet">
-            <table>
-                <thead><tr><th class="time-col">Time Duration</th><th>Meeting Room (Big)</th><th>Meeting Room (Small)</th></tr></thead>
-                <tbody id="gridBody"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- SECURITY SELECTION MODAL -->
-<div class="modal-overlay" id="securityChoiceModal">
-    <div class="modal-box">
-        <h3>Verification Required</h3>
-        <p style="text-align:center; font-size:12px; margin-bottom:20px;">Choose your access method:</p>
-        <div style="display:flex; flex-direction:column; gap:12px;">
-            <button class="login-btn" onclick="handleAccessID()">ENTER ACCESS ID</button>
-            <button class="login-btn" style="background:var(--al-anees-orange);" onclick="openOtpUserList()">GET ACCESS VIA OTP</button>
-            <button class="login-btn" style="background:#444;" onclick="closeModals()">CANCEL</button>
-        </div>
-    </div>
-</div>
-
-<!-- OTP USER LIST MODAL -->
-<div class="modal-overlay" id="otpUserListModal">
-    <div class="modal-box">
-        <h3>Select Recipient</h3>
-        <p style="text-align:center; font-size:11px; margin-bottom:15px;">Who should receive the OTP code?</p>
-        <div id="otpUserContainer" style="max-height: 300px; overflow-y: auto; padding-right: 5px;"></div>
-        <button class="login-btn" style="background:#444; margin-top:15px;" onclick="closeModals()">BACK</button>
-    </div>
-</div>
-
-<!-- REQUESTER NAME MODAL (CUSTOM PROMPT) -->
-<div class="modal-overlay" id="requesterNameModal">
-    <div class="modal-box">
-        <h3>Your Identity</h3>
-        <p style="text-align:center; font-size:11px; margin-bottom:15px;">Enter your name so the manager knows who is requesting access.</p>
-        <div class="modal-field">
-            <label>Requester Name</label>
-            <input type="text" id="reqInputName" placeholder="Type your name here...">
-        </div>
-        <button class="login-btn" onclick="submitRequesterName()">CONTINUE</button>
-        <button class="login-btn" style="background:#444; margin-top:10px;" onclick="closeModals()">CANCEL</button>
-    </div>
-</div>
-
-<!-- OTP VERIFICATION MODAL (CUSTOM PROMPT) -->
-<div class="modal-overlay" id="otpVerifyModal">
-    <div class="modal-box">
-        <h3>Verify Code</h3>
-        <p id="otpMessage" style="text-align:center; font-size:11px; margin-bottom:15px; font-weight: 600; color: var(--primary-navy);"></p>
-        <div class="modal-field">
-            <label>6-Digit OTP</label>
-            <input type="text" id="otpInputCode" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 5px; font-weight: 800;" placeholder="000000">
-        </div>
-        <button class="login-btn" onclick="submitOtpCode()">VERIFY & ACCESS</button>
-        <button class="login-btn" style="background:#444; margin-top:10px;" onclick="closeModals()">CANCEL</button>
-    </div>
-</div>
-
-<div class="modal-overlay" id="bookingModal">
-    <div class="modal-box">
-        <h3 id="modalTitle">New Booking</h3>
-        <div class="modal-field"><label>Name</label><input type="text" id="inputName"></div>
-        <div class="modal-field"><label>Email</label><input type="email" id="inputEmail"></div>
-        <div class="modal-field"><label>CC: (Staff Emails - separated by comma)</label><input type="text" id="inputCC" placeholder="staff1@example.com, staff2@example.com"></div>
-        <div class="modal-field"><label>Agenda</label><input type="text" id="inputAgenda"></div>
-        <div class="modal-field"><label>Notes</label><textarea id="inputNotes" rows="2"></textarea></div>
-        <div style="display:flex; gap:12px;">
-            <button class="login-btn" onclick="confirmBooking()">SAVE BOOKING</button>
-            <button class="login-btn" style="background:#444;" onclick="closeModals()">CANCEL</button>
-        </div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="historyModal">
-    <div class="modal-box">
-        <h3>Log Action</h3>
-        <p style="font-size: 11px; text-align: center; color: #555; margin-bottom: 15px;">Provide your details to log this action in history.</p>
-        <div class="modal-field"><label>Your Name</label><input type="text" id="histName"></div>
-        <div class="modal-field"><label>Your Email</label><input type="email" id="histEmail"></div>
-        <button class="login-btn" id="histConfirmBtn">PROCEED</button>
-        <button class="login-btn" style="background:#444; margin-top: 10px;" onclick="closeModals()">CANCEL</button>
-    </div>
-</div>
-
+<!-- 1. MULTI-PIN MODAL -->
 <div class="modal-overlay" id="pinModal">
-    <div class="modal-box">
-        <h3>Pin to Days</h3>
-        <div id="dayPickerGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:15px;"></div>
-        <div style="display:flex; flex-direction:column; gap:10px;">
-            <button class="login-btn" onclick="confirmPin()">Confirm Pin</button>
-            <button class="login-btn" style="background:#444;" onclick="selectAllDays()">All Days</button>
-            <button class="login-btn" style="background:#999;" onclick="closeModals()">Cancel</button>
+    <div class="modal-box" style="text-align: center; width: 500px; border: 1px solid var(--al-anees-blue);">
+        <h3 style="color:var(--al-anees-blue); margin-bottom:20px; font-family:'Audiowide';">📌 Set Permanent Pin</h3>
+        <p style="font-size: 13px; color: #666; margin-bottom: 20px;">Select multiple days for this slot to repeat:</p>
+        <div id="daySelectorContainer" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
+            <!-- Buttons dynamically generated -->
         </div>
+        <button class="btn-save" onclick="applyMultiPin()">CONFIRM PERMANENT PIN</button>
+        <button class="btn-cancel" onclick="closeModals()" style="background:#eee; color:#333;">CANCEL</button>
     </div>
 </div>
 
-<div class="modal-overlay" id="choiceModal">
-    <div class="modal-box">
-        <h3>Unpin Management</h3>
-        <p style="text-align:center; font-size:13px; color:#555;">Do you want to unpin this slot for today only, or permanently remove it from all weeks?</p>
-        <div class="choice-btn-container">
-            <button class="login-btn btn-today" onclick="finalizeUnpin('today')">UNPIN FOR TODAY ONLY</button>
-            <button class="login-btn btn-forever" onclick="finalizeUnpin('forever')">UNPIN PERMANENTLY (FOREVER)</button>
-            <button class="login-btn" style="background:#999;" onclick="closeModals()">CANCEL</button>
+<!-- 2. MAIN DASHBOARD -->
+<div class="container">
+    <div class="header">
+        <img src="alaneesqatar_cover.jpg" alt="Al Anees Logo" class="brand-logo">
+        <div style="text-align: center;">
+            <h1 style="font-family:'Audiowide'; font-size: 18px; margin:0; color:var(--primary-navy);">MEETING MANAGEMENT</h1>
+            <div class="date-controls">
+                <button class="nav-btn" onclick="changeDate(-1)">←</button>
+                <input type="date" id="datePicker" onchange="loadDate()" style="border:1px solid #ccc; border-radius:5px; padding:5px;">
+                <button class="nav-btn" onclick="changeDate(1)">→</button>
+            </div>
         </div>
+        <button id="logoutBtn" onclick="logout()" style="display:none; padding:8px 15px; background:#ff4d4d; color:white; border:none; border-radius:5px; cursor:pointer; font-weight: bold; font-size: 12px;">LOGOUT</button>
+    </div>
+
+    <div class="spreadsheet">
+        <table>
+            <thead>
+                <tr><th style="width:180px">TIME</th><th>MEETING ROOM (BIG)</th><th>MEETING ROOM (SMALL)</th></tr>
+            </thead>
+            <tbody id="gridBody"></tbody>
+        </table>
     </div>
 </div>
 
+<!-- 3. CONTEXT MENU -->
 <div id="context-menu">
-    <button onclick="startEdit()">✏️ Edit Booking</button>
-    <button id="pin-perm-btn" onclick="openPinModal()">📌 Pin as Permanent</button>
-    <button id="unpin-perm-btn" onclick="openChoiceModal()">📍 Unpin Permanent</button>
-    <button onclick="startDelete()" style="color: red; font-weight: bold;">🗑️ Delete Booking</button>
+    <button onclick="runSecure(() => { isEditing=true; openBookingModal(); })">✏️ Edit Booking</button>
+    <button id="pinToggleBtn" onclick="runSecure(handlePinToggle)" style="color:#b8860b;">📌 Pin as Permanent</button>
+    <button onclick="runSecure(deleteBooking)" style="color:red;">🗑️ Delete Booking</button>
+</div>
+
+<!-- 4. BOOKING MODAL (FIXED) -->
+<div class="modal-overlay" id="bookingModal">
+    <div class="modal-box" style="z-index: 1001; position: relative;">
+        <h2 id="modalTitle" style="color:var(--al-anees-blue); margin-top:0;">Meeting Details</h2>
+        
+        <div class="modal-field">
+            <label>Current Selected Slot</label>
+            <div id="displaySlot" style="font-weight: bold; background: #f0f7ff; padding: 10px; border-radius: 8px; color: var(--al-anees-blue);"></div>
+        </div>
+
+        <div class="modal-field"><label>BOOKED BY</label><input type="text" id="inputName"></div>
+        <div class="modal-field"><label>AGENDA</label><input type="text" id="inputAgenda"></div>
+        <div class="modal-field"><label>CC EMAILS</label><input type="text" id="inputCC" placeholder="comma separated emails"></div>
+        <div class="modal-field"><label>NOTES</label><textarea id="inputNotes" rows="2"></textarea></div>
+
+        <!-- BATCH SCHEDULE SECTION (image_98c453.png style) -->
+        <div class="replica-section" style="margin-top: 15px; border-top: 2px solid #f0f0f0; padding-top: 10px;">
+            <div style="font-size: 11px; font-weight: 800; color: #004085; margin-bottom: 8px;">ADD TO FULL SCHEDULE</div>
+            
+            <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                <input type="date" id="repDate" style="flex: 1.5; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                <select id="repTime" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px;"></select>
+            </div>
+            
+            <button type="button" onclick="addToBatch()" style="width:100%; background: #eef6ff; color:#004085; border:1px solid #d0e1ff; padding: 8px; border-radius: 5px; font-weight: bold; cursor: pointer;">
+                + ADD THIS SLOT
+            </button>
+            
+            <div id="replicaList" style="margin-top:10px; display: flex; flex-direction: column; gap: 5px; max-height: 120px; overflow-y: auto;"></div>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn-save" onclick="confirmBooking()" style="flex: 1; background: #28a745; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">SAVE & NOTIFY</button>
+            <button class="btn-cancel" onclick="closeModals()" style="flex: 1; background: #dc3545; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">CANCEL</button>
+        </div>
+    </div>
+</div>
+
+<!-- 5. AUTH MODALS -->
+<div class="modal-overlay" id="authChoiceModal">
+    <div class="modal-box" style="text-align:center;">
+        <h3>Identity Verification</h3>
+        <button class="btn-save" onclick="tryAccessID()">ACCESS ID LOGIN</button>
+        <button class="btn-save" style="background:#ff8c00; margin-top:10px;" onclick="showOtpInput()">EMAIL OTP LOGIN</button>
+        <button class="btn-cancel" onclick="closeModals()">CANCEL</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="otpListModal">
+    <div class="modal-box">
+        <h3 style="text-align:center;">Select Name</h3>
+        <div id="otpUserContainer"></div>
+    </div>
+</div>
+<!-- STEP 1: Enter User Info -->
+<div class="modal-overlay" id="otpUserDetailModal">
+    <div class="modal-box" style="text-align:center;">
+        <h3 style="color:var(--al-anees-blue); font-family:'Audiowide';">Identity Setup</h3>
+        <div class="modal-field">
+            <label>YOUR NAME</label>
+            <input type="text" id="otpRegName" placeholder="Enter your name">
+        </div>
+        <div class="modal-field">
+            <label>YOUR PERSONAL EMAIL</label>
+            <input type="email" id="otpRegEmail" placeholder="Enter your email">
+        </div>
+        <button class="btn-save" onclick="proceedToStaffSelection()">NEXT: SELECT STAFF EMAIL</button>
+        <button class="btn-cancel" onclick="closeModals()">CANCEL</button>
+    </div>
+</div>
+
+<!-- STEP 2: Select Staff for OTP (The list you provided) -->
+<div class="modal-overlay" id="otpStaffListModal">
+    <div class="modal-box">
+        <h3 style="text-align:center; color:var(--al-anees-blue);">Request OTP From</h3>
+        <p style="font-size:11px; text-align:center; color:#666;">Choose the official email to verify this session.</p>
+        <div id="staffListContainer"></div>
+        <button class="btn-cancel" onclick="closeModals()" style="margin-top:10px;">CANCEL</button>
+    </div>
 </div>
 
 <script>
-    // --- 1. AUTHORIZED STAFF (OTP Recipients) ---
-    const AUTHORIZED_STAFF = [
-        { name: "Riyas - Operation", email: "riyas@alaneeqatar.qa" },
-        { name: "Nahiyan - Finance", email: "financemanager@alaneesgroup.com" },
-        { name: "Hameem - Procurement", email: "hameem@alaneesgroup.com" },
-        { name: "Muhsin vp - Ooredoo", email: "muhsinvp@alaneesgroup.com" },
-        { name: "MUHSIN pc - Retail", email: "muhsinpc@alaneesgroup.com" },
-        { name: "Haris - HR", email: "hr@alaneesgroup.com" },
+    let batchList = []; 
+    const STAFF = [
+        { name: "Riyas", email: "riyas@alaneeqatar.qa" },
+        { name: "Nahiyan", email: "financemanager@alaneesgroup.com" },
+        { name: "Hameem", email: "hameem@alaneesgroup.com" },
+        { name: "Muhsin vp", email: "muhsinvp@alaneesgroup.com" },
+        { name: "MUHSIN pc", email: "muhsinpc@alaneesgroup.com" },
+        { name: "Haris", email: "hr@alaneesgroup.com" }
     ];
-
-    // --- 1.2 DIRECT ACCESS EMAILS (Instant entry via Access ID) ---
-    const DIRECT_ACCESS_EMAILS = [
-        "riyas@alaneeqatar.qa",
-        "alaneesit@gmail.com",
-        "itadministrator@alaneesgroup.com",
-        "financemanager@alaneesgroup.com",
-        "muhsinpc@alaneesgroup.com",
-        "hashim@alaneesgroup.com",
-        "hisham@alaneesgroup.com",
-        "hameem@alaneesgroup.com",
-        "hr@alaneesgroup.com",
-        "muhsinvp@alaneesgroup.com"
-    ];
-
-    const ALLOWED_EMAILS = AUTHORIZED_STAFF.map(s => s.email);
-
-    // --- 2. CONFIG ---
+    const DIRECT_IDS = ["riyas@alaneeqatar.qa", "alaneesit@gmail.com", "itadministrator@alaneesgroup.com", "financemanager@alaneesgroup.com", "muhsinpc@alaneesgroup.com", "hashim@alaneesgroup.com", "hisham@alaneesgroup.com", "hameem@alaneesgroup.com", "hr@alaneesgroup.com", "hr@alaneesgroup.com", "muhsinvp@alaneesgroup.com"];
+    const DAYS_LIST = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    
     const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.co', 'sb_publishable_zR1fAyjSofxeXbnDx6d0AA_gGQY9eL8');
-    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    let sel = null;
-    let isEditing = false;
-    let activeUserEmail = ""; 
-    let currentAction = null; 
-    let generatedOTP = "";
-    let pendingTargetEmail = "";
-    let pendingTargetName = "";
-    let pendingRequesterName = "";
+    emailjs.init("QcTjWCsESbgBj43VZ");
 
-    (function(){ emailjs.init("QcTjWCsESbgBj43VZ"); })();
+    let sel = null, isEditing = false, activeUserEmail = "", currentTask = null, genOTP = "", selectedStaffEmail = "";
+    const TIME_SLOTS = ["08:00 AM - 08:30 AM", "08:30 AM - 09:00 AM", "09:00 AM - 09:30 AM", "09:30 AM - 10:00 AM", "10:00 AM - 10:30 AM", "10:30 AM - 11:00 AM", "11:00 AM - 11:30 AM", "11:30 AM - 12:00 PM", "12:00 PM - 12:30 PM", "12:30 PM - 01:00 PM", "01:00 PM - 01:30 PM", "01:30 PM - 02:00 PM", "02:00 PM - 02:30 PM", "02:30 PM - 03:00 PM", "03:00 PM - 03:30 PM", "03:30 PM - 04:00 PM", "04:00 PM - 04:30 PM", "04:30 PM - 05:00 PM", "05:00 PM - 05:30 PM", "05:30 PM - 06:00 PM"];
 
-    // --- 3. SECURITY GATEKEEPER ---
-    function runSecure(actionCallback) {
-        // If user is already verified and in the direct access or authorized lists, proceed
-        if (activeUserEmail && (DIRECT_ACCESS_EMAILS.includes(activeUserEmail) || ALLOWED_EMAILS.includes(activeUserEmail))) {
-            actionCallback();
-            return;
-        }
-        currentAction = actionCallback;
-        document.getElementById('securityChoiceModal').style.display = 'flex';
-    }
+    // --- OTP & AUTH LOGIC ---
 
-    function handleAccessID() {
-        const idInput = prompt("Enter Authorized Access ID:");
-        if (!idInput) return;
-        const cleanId = idInput.trim().toLowerCase();
-        
-        // CHECK DIRECT ACCESS LIST
-        if (DIRECT_ACCESS_EMAILS.includes(cleanId)) { 
-            verifySuccess(cleanId); 
-        } 
-        else { 
-            alert("ACCESS DENIED"); 
-        }
-    }
-
-    function openOtpUserList() {
+    function showOtpInput() {
         closeModals();
-        const container = document.getElementById('otpUserContainer');
-        container.innerHTML = AUTHORIZED_STAFF.map(user => 
-            `<div class="otp-name-item" onclick="sendOtpTo('${user.email}', '${user.name}')">${user.name}</div>`
-        ).join('');
-        document.getElementById('otpUserListModal').style.display = 'flex';
+        document.getElementById('otpUserDetailModal').style.display = 'flex';
     }
 
-    async function sendOtpTo(targetEmail, targetName) {
-        pendingTargetEmail = targetEmail;
-        pendingTargetName = targetName;
-        closeModals();
-        document.getElementById('requesterNameModal').style.display = 'flex';
+    function proceedToStaffSelection() {
+        const name = document.getElementById('otpRegName').value;
+        const email = document.getElementById('otpRegEmail').value;
+        if (!name || !email) return alert("Please fill in your name and email first.");
+
+        const container = document.getElementById('staffListContainer');
+        container.innerHTML = STAFF.map(u => `
+            <div class="otp-item" id="staff-${u.email.replace(/[@.]/g, '')}" onclick="selectStaff('${u.email}')">
+                <strong>${u.name}</strong><br>
+                <span style="font-size:10px; color:#888;">${u.email}</span>
+            </div>
+        `).join('');
+
+        // Add the explicit Send Button at the bottom of the list
+        const btn = document.createElement('button');
+        btn.className = "btn-save";
+        btn.style.marginTop = "15px";
+        btn.innerText = "SEND OTP NOW";
+        btn.onclick = () => {
+            if(!selectedStaffEmail) return alert("Please select a person from the list first.");
+            sendCode(selectedStaffEmail);
+        };
+        container.appendChild(btn);
+
+        document.getElementById('otpUserDetailModal').style.display = 'none';
+        document.getElementById('otpStaffListModal').style.display = 'flex';
     }
 
-    async function submitRequesterName() {
-        pendingRequesterName = document.getElementById('reqInputName').value.trim();
-        
-        if (!pendingRequesterName) {
-            return alert("Please enter your name.");
-        }
+    function selectStaff(email) {
+        selectedStaffEmail = email;
+        // Visual feedback for selection
+        document.querySelectorAll('.otp-item').forEach(el => el.style.background = "white");
+        const selectedEl = document.getElementById(`staff-${email.replace(/[@.]/g, '')}`);
+        if(selectedEl) selectedEl.style.background = "#e0f0ff";
+    }
 
-        document.getElementById('requesterNameModal').style.display = 'none';
-        
-        generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+    async function sendCode(staffEmail) {
+        genOTP = Math.floor(100000 + Math.random() * 900000).toString();
+        const requesterName = document.getElementById('otpRegName').value;
+        const requesterEmail = document.getElementById('otpRegEmail').value;
 
         try {
-            await emailjs.send("service_nvgioq5", "template_yjywnjc", {
-                to_name: pendingTargetName,
-                to_email: pendingTargetEmail,
-                from_name: pendingRequesterName,
-                otp_code: generatedOTP
+            // This matches your template_yjywnjc variables exactly
+            await emailjs.send("service_nvgioq5", "template_yjywnjc", { 
+                to_email: staffEmail, 
+                from_name: requesterName,    
+                from_email: requesterEmail,  
+                otp_code: genOTP             
             });
-
-            document.getElementById('otpMessage').innerText = `Code sent to ${pendingTargetName}`;
-            document.getElementById('otpInputCode').value = "";
-            document.getElementById('otpVerifyModal').style.display = 'flex';
             
+            closeModals();
+            const c = prompt(`OTP sent to ${staffEmail}.\nEnter code to verify:`);
+            if(c === genOTP) {
+                activeUserEmail = staffEmail; 
+                document.getElementById('logoutBtn').style.display='block';
+                if(document.getElementById('inputName')) {
+                    document.getElementById('inputName').value = requesterName;
+                    document.getElementById('inputCC').value = requesterEmail;
+                }
+                currentTask(); 
+            } else {
+                alert("Invalid OTP");
+                activeUserEmail = ""; 
+            }
         } catch (err) {
-            console.error("OTP Error:", err);
-            alert("Failed to send OTP code: " + (err.text || "Check your internet or EmailJS quota."));
+            alert("EmailJS Error: " + err.message);
         }
     }
 
-    function submitOtpCode() {
-        if (document.getElementById('otpInputCode').value.trim() === generatedOTP) {
-            verifySuccess(pendingTargetEmail);
-        } else { alert("Invalid Code"); }
+    function runSecure(task) { 
+        if (activeUserEmail) { task(); return; } 
+        currentTask = task; 
+        document.getElementById('authChoiceModal').style.display = 'flex'; 
     }
 
-    function verifySuccess(email) {
-        activeUserEmail = email;
-        document.getElementById('logoutBtn').style.display = 'block';
-        closeModals();
-        if (currentAction) { currentAction(); currentAction = null; }
+    function tryAccessID() { 
+        const id = prompt("Access ID:"); 
+        if (DIRECT_IDS.includes(id)) { 
+            activeUserEmail = id; 
+            document.getElementById('logoutBtn').style.display='block'; 
+            closeModals(); 
+            currentTask(); 
+        } 
     }
 
-    function logout() { activeUserEmail = ""; document.getElementById('logoutBtn').style.display = 'none'; }
+    function logout() { activeUserEmail = ""; document.getElementById('logoutBtn').style.display='none'; }
 
-    // --- 4. CORE UI ---
+    // --- BOOKING & GRID LOGIC ---
+
+    function initRepTime() {
+        const selObj = document.getElementById('repTime');
+        selObj.innerHTML = "";
+        TIME_SLOTS.forEach(t => { let o = document.createElement('option'); o.value = t; o.innerText = t; selObj.appendChild(o); });
+    }
+
+    function addToBatch() {
+        const d = document.getElementById('repDate').value;
+        const t = document.getElementById('repTime').value;
+        if (!d || !t) return alert("Select Date and Time first!");
+        batchList.push({ date: d, time_slot: t });
+        const list = document.getElementById('replicaList');
+        const item = document.createElement('div');
+        item.style = "display: flex; align-items: center; gap: 10px; background: #f0f7ff; padding: 8px 12px; border-radius: 4px; font-size: 13px; color: #004085; border: 1px solid #d0e1ff;";
+        item.innerHTML = `<span>🗓️</span> <span>${d} | <strong>${t}</strong></span>`;
+        list.appendChild(item);
+    }
+
     async function loadDate() {
-        const curDate = document.getElementById('datePicker').value;
-        if(!curDate) return;
-        const dateObj = new Date(curDate);
-        const curDayShort = dayNames[dateObj.getDay()].substring(0,3);
-        document.getElementById('dayDisplay').innerText = dayNames[dateObj.getDay()];
-        
-        const [live, perm] = await Promise.all([
-            _supabase.from('meetings').select('*').eq('date', curDate), 
-            _supabase.from('permanent_meetings').select('*').eq('day_name', curDayShort)
-        ]);
-        
-        const grid = document.getElementById('gridBody'); grid.innerHTML = '';
-        let d = new Date(); d.setHours(7, 0, 0, 0); 
-        for(let i=0; i<22; i++){
-            let s = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-            d.setMinutes(d.getMinutes() + 30);
-            let e = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-            const t = `${s} - ${e}`;
+        const dateInput = document.getElementById('datePicker').value;
+        if(!dateInput) return;
+        const selectedDate = new Date(dateInput);
+        const currentDayName = DAYS_LIST[selectedDate.getDay()];
+        const grid = document.getElementById('gridBody');
+
+        const { data: meetings, error } = await _supabase.from('meetings').select('*')
+            .or(`date.eq.${dateInput},and(is_permanent.eq.true,or(day_name.is.null,day_name.eq.${currentDayName},day_name.eq.All))`);
+
+        if (error) return console.error(error);
+        grid.innerHTML = '';
+
+        TIME_SLOTS.forEach(t => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td class="time-col">${t}</td>`;
-            for(let r=0; r<2; r++){
-                const room = r === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
-                const data = live.data?.find(x => x.time_slot === t && x.room_name === room) || 
-                             perm.data?.find(x => x.time_slot === t && x.room_name === room);
-                const isP = perm.data?.some(x => x.time_slot === t && x.room_name === room);
+            tr.innerHTML = `<td style="text-align:center; font-weight:bold; font-size:12px; color:#666;">${t}</td>`;
+            for (let r = 0; r < 2; r++) {
+                const roomName = r === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
+                const m = meetings?.find(x => x.time_slot === t && x.room_name === roomName);
                 const td = document.createElement('td');
                 const slot = document.createElement('div');
-                if(data) {
-                    slot.className = isP ? "slot permanent" : "slot booked";
-                    slot.innerHTML = `<b>${data.booked_by}</b><div style="font-size:10px;">${data.agenda}</div>`;
-                    td.oncontextmenu = (ev) => {
-                        ev.preventDefault(); 
-                        sel = { id: data.id, time: t, room: room, roomIdx: r, isP: isP, data: data };
-                        const menu = document.getElementById('context-menu'); 
-                        menu.style.display = 'block'; menu.style.left = ev.pageX + 'px'; menu.style.top = ev.pageY + 'px';
-                        document.getElementById('pin-perm-btn').style.display = isP ? 'none' : 'block'; 
-                        document.getElementById('unpin-perm-btn').style.display = isP ? 'block' : 'none';
-                    };
+                if (m) {
+                    slot.className = "slot booked" + (m.is_permanent ? " pinned-slot" : "");
+                    slot.innerHTML = `${m.is_permanent ? '<span class="pin-icon">📌</span>' : ''}<div style="font-weight:800; font-size:12px;">${m.booked_by}</div><div style="font-size:10px;">${m.agenda}</div>`;
+                    td.oncontextmenu = (e) => { e.preventDefault(); sel = { ...m, roomIdx: r }; showContextMenu(e); };
                 } else {
-                    slot.className = "slot available"; slot.innerText = "Available"; 
-                    slot.onclick = () => { sel = { time: t, roomIdx: r }; runSecure(() => { isEditing = false; openBookingModal(); }); };
+                    slot.className = "slot available"; slot.innerText = "Available";
+                    slot.onclick = () => { sel = { time_slot: t, roomIdx: r }; runSecure(() => { isEditing = false; openBookingModal(); }); };
                 }
                 td.appendChild(slot); tr.appendChild(td);
             }
             grid.appendChild(tr);
-        }
+        });
     }
 
-    // --- 5. BOOKING LOGIC ---
     async function confirmBooking() {
-        const date = document.getElementById('datePicker').value;
-        const roomName = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
-        const bookedBy = document.getElementById('inputName').value.trim();
-        const agenda = document.getElementById('inputAgenda').value.trim();
-        const ccEmails = document.getElementById('inputCC').value.trim(); 
-        const notes = document.getElementById('inputNotes').value;
+        const ccValue = document.getElementById('inputCC').value;
+        const dateVal = document.getElementById('datePicker').value;
+        const timeVal = sel.time_slot;
+        const agendaVal = document.getElementById('inputAgenda').value;
+        const notesVal = document.getElementById('inputNotes').value;
+        const roomVal = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
 
-        if (!bookedBy || !agenda) return alert("Name and Agenda are required.");
-
-        const timeParts = sel.time.split(" - ");
-        function formatToOutlook(dateStr, timeStr) {
-            const dateObj = new Date(`${dateStr} ${timeStr}`);
-            return dateObj.toISOString(); 
-        }
-
-        const startISO = formatToOutlook(date, timeParts[0]);
-        const endISO = formatToOutlook(date, timeParts[1]);
-        const bodyContent = `Location: ${roomName}%0ABooked by: ${bookedBy}%0ANotes: ${notes}`;
-        const outlookURL = `https://outlook.office.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(agenda)}&body=${bodyContent}&location=${encodeURIComponent(roomName)}&startdt=${startISO}&enddt=${endISO}`;
-
-        const payload = { 
-            date: date, 
-            time_slot: sel.time, 
-            room_name: roomName, 
-            booked_by: bookedBy, 
-            email: activeUserEmail, 
-            agenda: agenda, 
-            notes: notes,
-            cc_emails: ccEmails 
+        const payload = {
+            date: dateVal,
+            time_slot: timeVal,
+            room_name: roomVal,
+            booked_by: document.getElementById('inputName').value,
+            agenda: agendaVal,
+            notes: notesVal,
+            email: ccValue 
         };
 
-        let result;
-        if (isEditing && sel.id) {
-            result = await _supabase.from('meetings').update(payload).eq('id', sel.id);
-        } else {
-            result = await _supabase.from('meetings').insert([payload]);
-        }
-
-        if (result.error) return alert("Database Error: " + result.error.message);
-
         try {
-            await emailjs.send("service_nvgioq5", "template_iskedxw", {
-                to_email: "alaneesit@gmail.com",
-                cc_emails: ccEmails,
-                booked_by: bookedBy,
-                room_name: roomName,
-                date: date,
-                time_slot: sel.time,
-                agenda: agenda,
-                notes: notes,
-                calendar_link: outlookURL 
-            });
-            alert("Booking Successful! The slot is reserved and email sent.");
-        } catch (err) {
-            alert("Slot saved, but email failed: " + err.text);
-        }
+            let res = isEditing && sel.id ? 
+                await _supabase.from('meetings').update(payload).eq('id', sel.id) : 
+                await _supabase.from('meetings').insert([payload]);
 
-        closeModals(); 
-        loadDate();
+            if (res.error) throw res.error;
+            alert("Meeting Saved!");
+            closeModals();
+            setTimeout(loadDate, 500);
+        } catch (err) { alert("Error: " + err.message); }
     }
 
     function openBookingModal() {
-        document.getElementById('modalTitle').innerText = isEditing ? "Edit Booking" : "New Booking";
-        document.getElementById('inputName').value = isEditing ? (sel.data.booked_by || "") : "";
-        document.getElementById('inputAgenda').value = isEditing ? (sel.data.agenda || "") : "";
-        document.getElementById('inputNotes').value = isEditing ? (sel.data.notes || "") : "";
-        document.getElementById('inputCC').value = isEditing ? (sel.data.cc_emails || "") : "";
+        document.getElementById('displaySlot').innerText = `${document.getElementById('datePicker').value} | ${sel.time_slot}`;
+        document.getElementById('inputName').value = isEditing ? sel.booked_by : "";
+        document.getElementById('inputAgenda').value = isEditing ? sel.agenda : "";
+        document.getElementById('inputCC').value = isEditing ? (sel.email || "") : "";
+        document.getElementById('inputNotes').value = isEditing ? (sel.notes || "") : "";
+        document.getElementById('replicaList').innerHTML = "";
+        batchList = [];
         document.getElementById('bookingModal').style.display = 'flex';
     }
 
-    function startEdit() { 
-        document.getElementById('context-menu').style.display = 'none';
-        runSecure(() => { isEditing = true; openBookingModal(); });
+    async function deleteBooking() { if(confirm("Delete Slot?")) { await _supabase.from('meetings').delete().eq('id', sel.id); setTimeout(loadDate, 500); } }
+    
+    function showContextMenu(e) {
+        const m = document.getElementById('context-menu');
+        m.style.display = 'block'; m.style.left = e.pageX + 'px'; m.style.top = e.pageY + 'px';
     }
 
-    async function startDelete() {
-        if(!confirm("Delete this booking?")) return;
-        const { error } = await _supabase.from('meetings').delete().eq('id', sel.id);
-        if(!error) loadDate();
-    }
-
-    function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
+    function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); selectedStaffEmail = ""; }
     
     function changeDate(days) { 
         let d = new Date(document.getElementById('datePicker').value); 
@@ -531,14 +399,12 @@
     }
 
     window.onload = () => { 
+        initRepTime(); 
         document.getElementById('datePicker').value = new Date().toISOString().split('T')[0]; 
         loadDate(); 
     };
-
-    window.onclick = (e) => { 
-        if(e.target.classList.contains('modal-overlay')) closeModals(); 
-        document.getElementById('context-menu').style.display = 'none'; 
-    };
+    
+    window.onclick = (e) => { if(!e.target.closest('#context-menu')) document.getElementById('context-menu').style.display = 'none'; };
 </script>
-</body>          
+</body>
 </html>
