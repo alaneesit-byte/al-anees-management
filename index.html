@@ -110,13 +110,13 @@
     <div class="modal-box">
         <h2 id="modalHeader" style="margin:0 0 20px 0; color:var(--primary-navy); font-size:20px;">Book Meeting</h2>
         
-        <div class="modal-field"><label>Booked By</label><input type="text" id="inputName"></div>
+        <div class="modal-field"><label>Booked By(Your Name)</label><input type="text" id="inputName"></div>
         <div class="modal-field"><label>Meeting Agenda</label><input type="text" id="inputAgenda"></div>
         <div class="modal-field"><label>Recipient Email</label><input type="text" id="inputCC" placeholder="manager@alaneesgroup.com"></div>
         <div class="modal-field"><label>Private Notes</label><textarea id="inputNotes" rows="2"></textarea></div>
 
         <div style="background: #fdfdfd; padding: 15px; border-radius: 15px; margin-top: 15px; border: 1px solid #eee;">
-            <p style="margin:0 0 10px 0; font-size:10px; font-weight:800; color:var(--al-anees-blue);">EXTENSION & RECURRENCE</p>
+            <p style="margin:0 0 10px 0; font-size:10px; font-weight:800; color:var(--al-anees-blue);">EXTEND DATE & TIME</p>
             <div class="modal-field">
                 <label>Extend to Date</label>
                 <input type="date" id="extendDate">
@@ -135,7 +135,7 @@
 <script>
     const ADMINS = [
         { name: "IT", email: "alaneesit@gmail.com" },   
-        { name: "Riyas", email: "riyas@alaneeqatar.qa" },
+        { name: "Riyas", email: "riyas@alaneesqatar.qa" },
         { name: "Nahiyan", email: "financemanager@alaneesgroup.com" },
         { name: "Hameem", email: "hameem@alaneesgroup.com" },
         { name: "Muhsin vp", email: "muhsinvp@alaneesgroup.com" },
@@ -144,7 +144,7 @@
     ];
 
     const TIME_SLOTS = ["08:00 AM", "08:30 AM", "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM", "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM", "05:00 PM", "05:30 PM", "06:00 PM"];
-    const DIRECT_IDS = ["riyas@alaneeqatar.qa", "alaneesit@gmail.com", "itadministrator@alaneesgroup.com", "financemanager@alaneesgroup.com", "muhsinpc@alaneesgroup.com", "hashim@alaneesgroup.com", "hisham@alaneesgroup.com", "hameem@alaneesgroup.com", "hr@alaneesgroup.com", "hr@alaneesgroup.com", "muhsinvp@alaneesgroup.com"];
+    const DIRECT_IDS = ["riyas@alaneesqatar.qa", "alaneesit@gmail.com", "itadministrator@alaneesgroup.com", "financemanager@alaneesgroup.com", "muhsinpc@alaneesgroup.com", "hashim@alaneesgroup.com", "hisham@alaneesgroup.com", "hameem@alaneesgroup.com", "hr@alaneesgroup.com", "hr@alaneesgroup.com", "muhsinvp@alaneesgroup.com"];
     
     const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.co', 'sb_publishable_zR1fAyjSofxeXbnDx6d0AA_gGQY9eL8');
     emailjs.init("qaqwTAi97iG0bBoe3");
