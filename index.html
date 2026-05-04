@@ -3,182 +3,487 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AL ANEES | Meeting Intelligence</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Al Anees - Executive Meeting System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Audiowide&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --sidebar-width: 260px; --primary: #2563eb; --bg: #f8fafc; --text-dark: #0f172a; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        #context-menu {
+    /* ... your existing styles ... */
+    pointer-events: auto;
+}
+        :root { --primary-navy: #1a3a5a; --booked-blue: #007bff; --al-anees-blue: #1c5fa8; --perma-purple: #6f42c1; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: #f4f7f9; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .container { width: 100%; max-width: 1400px; padding: 20px; }
+        .header { background: white; padding: 15px 30px; border-radius: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .brand-logo { height: 60px; }
+        .spreadsheet { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th { background: #f8f9fa; padding: 15px; color: var(--primary-navy); border-bottom: 2px solid #eee; font-size: 13px; }
+        td { border: 1px solid #eee; height: 85px; padding: 5px; }
+        .slot { width: 100%; height: 100%; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; position: relative; }
+        .available { color: #ccc; font-weight: 600; font-size: 11px; }
+        .available:hover { background: #f0f7ff; color: var(--al-anees-blue); }
+        .booked { background: white; border-left: 5px solid var(--booked-blue); box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
+        .permanent { 
+    border-left-color: var(--perma-purple); 
+    background: #f8f0ff !important; /* Light purple tint */
+    border-right: 1px solid #e0d0f0;
+}
+        .pin-icon { position: absolute; top: 5px; right: 5px; font-size: 10px; color: var(--perma-purple); }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal-box { background: white; padding: 35px; border-radius: 25px; width: 480px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+        .modal-field { margin-bottom: 12px; }
+        .modal-field label { display: block; font-size: 11px; font-weight: 800; margin-bottom: 5px; color: #555; text-transform: uppercase; }
+        .modal-field input, .modal-field textarea, .modal-field select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; box-sizing: border-box; }
+        .btn-save { width: 100%; padding: 18px; background: var(--al-anees-blue); color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 14px; text-transform: uppercase; margin-bottom: 10px; }
+        .btn-otp { background: #ffffff; color: var(--al-anees-blue); border: 2px solid var(--al-anees-blue); }
         
-        /* Sidebar Styling */
-        .sidebar { width: var(--sidebar-width); background: #1e293b; color: white; display: flex; flex-direction: column; padding: 20px; box-shadow: 4px 0 10px rgba(0,0,0,0.1); }
-        .logo-section { border-bottom: 1px solid #334155; padding-bottom: 20px; margin-bottom: 20px; }
-        .logo-placeholder { font-weight: 800; font-size: 1.2rem; letter-spacing: 1px; color: #38bdf8; }
-        .nav-item { padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: 0.2s; font-size: 0.9rem; }
-        .nav-item:hover { background: #334155; }
-        .nav-item.active { background: var(--primary); }
-
-        /* Main Content */
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
-        .card { background: white; width: 100%; max-width: 850px; border-radius: 20px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-        
-        /* Status Indicators */
-        .status-dot { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; display: inline-block; margin-right: 8px; animation: blink 1.5s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-
-        /* Buttons */
-        .btn { padding: 14px 28px; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 1rem; transition: 0.3s; }
-        .btn-start { background: var(--text-dark); color: white; }
-        .btn-stop { background: #ef4444; color: white; }
-        .btn-save { background: #10b981; color: white; margin-top: 20px; }
-
-        /* Results */
-        .result-section { border-top: 1px solid #e2e8f0; margin-top: 30px; padding-top: 30px; }
-        .label { font-weight: 700; color: var(--primary); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 10px; display: block; }
-        #liveText { color: #64748b; font-style: italic; margin-bottom: 20px; min-height: 24px; }
+        #context-menu { position: absolute; display: none; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 8px; z-index: 3000; border: 1px solid #eee; }
+        #context-menu button { display: block; width: 200px; padding: 12px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; border-radius: 8px; }
+        #context-menu button:hover { background: #f4f7f9; }
     </style>
 </head>
 <body>
-
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <div class="logo-section">
-            <div class="logo-placeholder">AL ANEES</div>
-            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 5px;">STAFF INTELLIGENCE HUB</div>
-        </div>
-        <div class="nav-item active">● Meeting Recorder</div>
-        <div class="nav-item">📁 History</div>
-        <div class="nav-item">⚙️ Settings</div>
-        <div style="margin-top: auto; font-size: 0.75rem; color: #64748b;">v2.1 Stable Build</div>
-    </div>
-
-    <!-- MAIN INTERFACE -->
-    <div class="main-content">
-        <div class="card">
-            <div id="idleState">
-                <h1 style="margin-top:0;">Precision AI Capture</h1>
-                <p>Welcome to the 2026 Al Anees Meeting Engine. This tool automatically removes repetitions and separates action points using Gemini 1.5 Flash.</p>
-                <button class="btn btn-start" onclick="startSession()">
-                    <svg width="20" height="20" fill="white" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-                    Start Recording
-                </button>
-            </div>
-
-            <div id="recordingState" class="hidden">
-                <div style="display:flex; align-items:center; margin-bottom:20px;">
-                    <span class="status-dot"></span>
-                    <span style="font-weight:700; color:#ef4444;">LIVE AI FEED</span>
-                </div>
-                <div id="liveText">Gemini is listening to the meeting...</div>
-                <button class="btn btn-stop" onclick="stopSession()">Stop & Analyze Report</button>
-            </div>
-
-            <div id="resultState" class="hidden">
-                <h2 id="resDate" style="margin-top:0; color:#64748b; font-size:1rem;"></h2>
-                <div class="result-section">
-                    <span class="label">Professional Summary</span>
-                    <p id="resSummary" style="line-height:1.6;"></p>
-                    
-                    <span class="label" style="margin-top:20px;">Action Points</span>
-                    <div id="resActions" style="line-height:1.8;"></div>
-                </div>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn btn-save" onclick="saveDoc()">Export Document</button>
-                    <button class="btn" onclick="location.reload()" style="margin-top:20px; background:#e2e8f0; color:#475569;">New Session</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let rec;
-        let rawBuffer = "";
-        let lastSentence = "";
+<!-- ADMIN OTP SELECTION MODAL -->
+<div id="otpModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; font-family:Arial, sans-serif;">
+    <div class="modal-box" style="width:320px; margin:100px auto; padding:20px; text-align:center;">
+        <h3 style="color:var(--al-anees-blue); margin-top:0; margin-bottom:15px;">Login Request</h3>
+        <p style="font-size:14px; color:#666;">Select an Administrator to receive OTP:</p>
         
-        // 🔑 YOUR SETTINGS
-        const API_KEY = "YOUR_API_KEY_HERE";
+        <div id="adminList" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
+            <!-- Names injected by JS -->
+        </div>
 
-        function startSession() {
-            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if(!Speech) return alert("Browser not supported.");
-            
-            rec = new Speech();
-            rec.continuous = true;
-            rec.interimResults = true;
-            rec.lang = 'en-US';
+        <div id="userInfoSection" style="display:none; border-top:1px solid #eee; padding-top:15px;">
+            <input type="text" id="requesterName" placeholder="Your Name" class="modal-field" style="width:90%; padding:10px; margin-bottom:10px;">
+            <input type="email" id="requesterEmail" placeholder="Your Email" class="modal-field" style="width:90%; padding:10px; margin-bottom:15px;">
+            <button class="btn-save" onclick="sendOTP()">SEND OTP</button>
+        </div>
+        
+        <button onclick="closeOtpModal()" style="background:none; border:none; color:#999; margin-top:15px; cursor:pointer; font-size:12px;">CANCEL</button>
+    </div>
+</div>
+<!-- IDENTITY VERIFICATION MODAL -->
+<div class="modal-overlay" id="authChoiceModal">
+    <div class="modal-box" style="text-align:center;">
+        <h2 style="color:var(--primary-navy); margin-top:0;">Identity Verification</h2>
+        <p style="font-size:14px; color:#666; margin-bottom:25px;">Please login to manage this meeting.</p>
+        <button class="btn-save" onclick="tryAccessID()">ACCESS ID LOGIN</button>
+        <button class="btn-save btn-otp" onclick="requestOTP()">EMAIL OTP LOGIN</button>
+        <button onclick="closeModals()" style="margin-top:15px; border:none; background:none; color:#999; cursor:pointer; font-weight:600;">Cancel</button>
+    </div>
+</div>
 
-            rec.onresult = (e) => {
-                let interim = "";
-                for (let i = e.resultIndex; i < e.results.length; ++i) {
-                    let text = e.results[i][0].transcript.trim();
-                    if (e.results[i].isFinal) {
-                        // Anti-Repetition Shield
-                        if (text !== lastSentence) {
-                            rawBuffer += text + ". ";
-                            lastSentence = text;
-                        }
-                    } else { interim = text; }
-                }
-                document.getElementById('liveText').innerText = interim || "Listening...";
+<div class="container">
+    <div class="header">
+        <img src="alaneesqatar_cover.jpg" alt="Al Anees" class="brand-logo">
+        <div style="display:flex; gap:15px; align-items:center;">
+            <button onclick="changeDate(-1)" style="border:none; background:none; cursor:pointer; font-size:18px;">◀</button>
+            <input type="date" id="datePicker" onchange="loadDate()" style="padding:8px; border-radius:8px; border:1px solid #ddd; font-weight:bold; font-family:inherit;">
+            <button onclick="changeDate(1)" style="border:none; background:none; cursor:pointer; font-size:18px;">▶</button>
+        </div>
+        <div id="statusBadge" style="font-size:11px; padding:5px 10px; border-radius:20px; background:#eee; color:#666; font-weight:bold;">Guest Mode</div>
+    </div>
+
+    <div class="spreadsheet">
+        <table>
+            <thead>
+                <tr><th style="width:160px">TIME</th><th>MEETING ROOM (BIG)</th><th>MEETING ROOM (SMALL)</th></tr>
+            </thead>
+            <tbody id="gridBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="context-menu">
+    <button onclick="runSecure(editBooking)">✏️ Edit Booking</button>
+    <button id="pinBtn" onclick="runSecure(togglePin)">📌 Pin / Unpin Permanent</button>
+    <hr style="border:0; border-top:1px solid #eee;">
+    <button onclick="runSecure(handleDelete)" style="color:red;">🗑️ Delete Booking</button>
+</div>
+
+<!-- BOOKING MODAL -->
+<div class="modal-overlay" id="bookingModal">
+    <div class="modal-box">
+        <h2 id="modalHeader" style="margin:0 0 20px 0; color:var(--primary-navy); font-size:20px;">Book Meeting</h2>
+        
+        <div class="modal-field"><label>Booked By</label><input type="text" id="inputName"></div>
+        <div class="modal-field"><label>Meeting Agenda</label><input type="text" id="inputAgenda"></div>
+        <div class="modal-field"><label>Recipient Email</label><input type="text" id="inputCC" placeholder="manager@alaneesgroup.com"></div>
+        <div class="modal-field"><label>Private Notes</label><textarea id="inputNotes" rows="2"></textarea></div>
+
+        <div style="background: #fdfdfd; padding: 15px; border-radius: 15px; margin-top: 15px; border: 1px solid #eee;">
+            <p style="margin:0 0 10px 0; font-size:10px; font-weight:800; color:var(--al-anees-blue);">EXTENSION & RECURRENCE</p>
+            <div class="modal-field">
+                <label>Extend to Date</label>
+                <input type="date" id="extendDate">
+            </div>
+            <div class="modal-field">
+                <label>End Time (Set Duration)</label>
+                <select id="endSlotSelect"></select>
+            </div>
+        </div>
+        
+        <button class="btn-save" style="margin-top:20px;" onclick="confirmBooking()">SAVE & SYNC TO OUTLOOK</button>
+        <button onclick="closeModals()" style="width:100%; margin-top:10px; background:none; border:none; color:#999; cursor:pointer; font-size:12px;">Discard Changes</button>
+    </div>
+</div>
+
+<script>
+    const ADMINS = [
+        { name: "IT", email: "alaneesit@gmail.com" },   
+        { name: "Riyas", email: "riyas@alaneeqatar.qa" },
+        { name: "Nahiyan", email: "financemanager@alaneesgroup.com" },
+        { name: "Hameem", email: "hameem@alaneesgroup.com" },
+        { name: "Muhsin vp", email: "muhsinvp@alaneesgroup.com" },
+        { name: "MUHSIN pc", email: "muhsinpc@alaneesgroup.com" },
+        { name: "Haris", email: "hr@alaneesgroup.com" }
+    ];
+
+    const TIME_SLOTS = ["08:00 AM", "08:30 AM", "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM", "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM", "05:00 PM", "05:30 PM", "06:00 PM"];
+    const DIRECT_IDS = ["riyas@alaneeqatar.qa", "alaneesit@gmail.com", "itadministrator@alaneesgroup.com", "financemanager@alaneesgroup.com", "muhsinpc@alaneesgroup.com", "hashim@alaneesgroup.com", "hisham@alaneesgroup.com", "hameem@alaneesgroup.com", "hr@alaneesgroup.com", "hr@alaneesgroup.com", "muhsinvp@alaneesgroup.com"];
+    
+    const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.co', 'sb_publishable_zR1fAyjSofxeXbnDx6d0AA_gGQY9eL8');
+    emailjs.init("qaqwTAi97iG0bBoe3");
+
+    let sel = null, activeUser = null, windowTask = null, selectedAdmin = null;
+
+    // --- OTP LOGIC ---
+    function requestOTP() {
+        // Hide the choice modal first
+        document.getElementById('authChoiceModal').style.display = 'none';
+        
+        const list = document.getElementById('adminList');
+        list.innerHTML = '';
+        
+        ADMINS.forEach(admin => {
+            const btn = document.createElement('button');
+            btn.innerText = admin.name;
+            btn.style = "padding:10px; border:1px solid var(--al-anees-blue); background:white; color:var(--al-anees-blue); border-radius:6px; cursor:pointer; font-weight:bold;";
+            btn.onclick = () => {
+                document.querySelectorAll('#adminList button').forEach(b => {
+                    b.style.background = 'white';
+                    b.style.color = 'var(--al-anees-blue)';
+                });
+                btn.style.background = 'var(--al-anees-blue)';
+                btn.style.color = 'white';
+                selectedAdmin = admin;
+                // Show the fields for name and email only AFTER admin is selected
+                document.getElementById('userInfoSection').style.display = 'block';
             };
+            list.appendChild(btn);
+        });
+        
+        document.getElementById('otpModal').style.display = 'block';
+    }
 
-            rec.onstart = () => {
-                document.getElementById('idleState').style.display = 'none';
-                document.getElementById('recordingState').classList.remove('hidden');
-            };
-            rec.start();
+    async function sendOTP() {
+        const fromName = document.getElementById('requesterName').value;
+        const fromEmail = document.getElementById('requesterEmail').value;
+
+        if (!fromName || !fromEmail || !selectedAdmin) {
+            alert("Please select an admin and enter your details.");
+            return;
         }
 
-        async function stopSession() {
-            rec.stop();
-            document.getElementById('liveText').innerHTML = "<b>AI is deduplicating and separating action points...</b>";
+        const generatedOTP = Math.floor(1000 + Math.random() * 9000);
 
-            const prompt = `Rewrite this messy transcript for AL ANEES. 
-            1. Correct "male" to "mail". 
-            2. Remove duplicates. 
-            3. Return JSON: {"summary": "paragraph", "actions": ["list"]}.
-            Transcript: ${rawBuffer}`;
+        try {
+            await emailjs.send("service_pt04i2n", "template_3to5nhs", {
+                to_name: selectedAdmin.name,
+                to_email: selectedAdmin.email,
+                from_name: fromName,
+                from_email: fromEmail,
+                otp_code: generatedOTP 
+            });
 
-            // Fallback Logic to prevent 404
-            try {
-                let response = await callGemini("v1", prompt);
-                if (response.error) response = await callGemini("v1beta", prompt);
+            alert(`Request sent to ${selectedAdmin.name}. Check with them for the OTP.`);
+            
+            // Now prompt for the OTP to finish login
+            const uCode = prompt("Enter the OTP provided by " + selectedAdmin.name + ":");
+            if (uCode == generatedOTP) {
+                loginSuccess(fromEmail);
+            } else {
+                alert("Invalid OTP.");
+            }
+            closeOtpModal();
+        } catch (err) {
+            alert("Email failed: " + err.message);
+        }
+    }
+
+    function closeOtpModal() {
+        document.getElementById('otpModal').style.display = 'none';
+        document.getElementById('userInfoSection').style.display = 'none';
+        selectedAdmin = null;
+    }
+
+    // --- CORE APP LOGIC ---
+    async function loadDate() {
+    const dateInput = document.getElementById('datePicker').value;
+    const { data: meetings } = await _supabase.from('meetings').select('*').eq('date', dateInput);
+    const grid = document.getElementById('gridBody');
+    grid.innerHTML = '';
+
+    for (let i = 0; i < TIME_SLOTS.length - 1; i++) {
+        const range = `${TIME_SLOTS[i]} - ${TIME_SLOTS[i+1]}`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td style="text-align:center; font-weight:bold; font-size:12px; background:#fafafa;">${range}</td>`;
+        
+        for (let r = 0; r < 2; r++) {
+            const room = r === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
+            const m = meetings?.find(x => x.time_slot === range && x.room_name === room);
+            const td = document.createElement('td');
+            const slot = document.createElement('div');
+            
+            if (m) {
+                slot.className = `slot booked ${m.is_permanent ? 'permanent' : ''}`;
+                slot.innerHTML = `<strong>${m.booked_by}</strong><div style="font-size:10px;">${m.agenda}</div>`;
                 
-                const responseText = response.candidates[0].content.parts[0].text;
-                const result = JSON.parse(responseText.replace(/```json|```/g, "").trim());
+                // Ensure the pin icon shows if is_permanent is true
+                if(m.is_permanent) {
+                    slot.innerHTML += `<span class="pin-icon" style="position: absolute; top: 5px; right: 5px; font-size: 12px;">📌</span>`;
+                }
 
-                renderResult(result);
-            } catch (err) {
-                alert("Processing failed. Please check your API key.");
-                location.reload();
+                td.oncontextmenu = (e) => { 
+                    e.preventDefault(); 
+                    // CRITICAL FIX: Added m.id to the 'sel' object so the Pin function knows which row to update
+                    sel = { 
+                        ...m, 
+                        id: m.id, 
+                        roomIdx: r, 
+                        startIndex: TIME_SLOTS.indexOf(m.time_slot.split(' - ')[0]) 
+                    }; 
+                    showMenu(e); 
+                };
+            } else {
+                slot.className = "slot available"; 
+                slot.innerText = "Available Slot";
+                slot.onclick = () => { 
+                    sel = { date: dateInput, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r }; 
+                    runSecure(() => openModal(false)); 
+                };
+                td.oncontextmenu = (e) => { 
+                    e.preventDefault(); 
+                    sel = { date: dateInput, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r }; 
+                    runSecure(() => openModal(false)); 
+                };
+            }
+            td.appendChild(slot); 
+            tr.appendChild(td);
+        }
+        grid.appendChild(tr);
+    }
+}
+
+    function openModal(isEdit) {
+        document.getElementById('inputName').value = isEdit ? (sel.booked_by || "") : "";
+        document.getElementById('inputAgenda').value = isEdit ? (sel.agenda || "") : "";
+        document.getElementById('inputCC').value = isEdit ? (sel.email || "") : "";
+        document.getElementById('inputNotes').value = isEdit ? (sel.notes || "") : "";
+        document.getElementById('extendDate').value = sel.date;
+        
+        const endSelect = document.getElementById('endSlotSelect');
+        endSelect.innerHTML = '';
+        for (let j = sel.startIndex + 1; j < TIME_SLOTS.length; j++) {
+            let opt = document.createElement('option');
+            opt.value = TIME_SLOTS[j]; opt.innerText = TIME_SLOTS[j];
+            endSelect.appendChild(opt);
+        }
+        if (endSelect.options.length > 0) endSelect.selectedIndex = 0;
+        document.getElementById('bookingModal').style.display = 'flex';
+    }
+
+    async function confirmBooking() {
+        const dateValue = document.getElementById('datePicker').value;
+        const extendValue = document.getElementById('extendDate').value;
+        const startTime = TIME_SLOTS[sel.startIndex];
+        const endTime = document.getElementById('endSlotSelect').value;
+        const agendaValue = document.getElementById('inputAgenda').value;
+        const notesValue = document.getElementById('inputNotes').value;
+        const emailRecipient = document.getElementById('inputCC').value;
+        const nameOfBooker = document.getElementById('inputName').value;
+        const roomSelection = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
+
+        if (!endTime || !agendaValue || !nameOfBooker) { 
+            alert("Please fill Name, Agenda, and Duration."); 
+            return; 
+        }
+
+        const startISO = dateValue + 'T' + formatTimeForOutlook(startTime);
+        const endISO = extendValue + 'T' + formatTimeForOutlook(endTime);
+        
+        const calendarUrl = `https://outlook.office.com/calendar/0/deeplink/compose` +
+            `?subject=${encodeURIComponent(agendaValue)}` +
+            `&body=${encodeURIComponent(notesValue)}` +
+            `&startdt=${startISO}` +
+            `&enddt=${endISO}` +
+            `&location=${encodeURIComponent(roomSelection)}` +
+            `&to=${encodeURIComponent(emailRecipient)}`;
+
+        const fullScheduleDetail = `${dateValue === extendValue ? dateValue : dateValue + " to " + extendValue} (${startTime} - ${endTime})`;
+
+        const endIndex = TIME_SLOTS.indexOf(endTime);
+        let finalRows = [];
+        let dStart = new Date(dateValue);
+        let dEnd = new Date(extendValue);
+
+        for (let d = new Date(dStart); d <= dEnd; d.setDate(d.getDate() + 1)) {
+            const dStr = d.toISOString().split('T')[0];
+            for (let k = sel.startIndex; k < endIndex; k++) {
+                finalRows.push({ 
+                    booked_by: nameOfBooker, 
+                    agenda: agendaValue, 
+                    email: emailRecipient, 
+                    notes: notesValue, 
+                    room_name: roomSelection, 
+                    date: dStr, 
+                    time_slot: `${TIME_SLOTS[k]} - ${TIME_SLOTS[k+1]}` 
+                });
             }
         }
 
-        async function callGemini(version, text) {
-            const url = `https://generativelanguage.googleapis.com/${version}/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-            const res = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: text }] }] })
+        try {
+    // If sel.id exists, we are editing; otherwise, we are inserting
+    if (sel.id) {
+        await _supabase.from('meetings').delete().eq('id', sel.id); 
+    }
+    
+    await _supabase.from('meetings').insert(finalRows);
+            await emailjs.send("service_pt04i2n", "template_c6wumre", { 
+                to_email: emailRecipient,
+                calendar_link: calendarUrl,             
+                room_name: roomSelection,
+                time_slot: `${startTime} - ${endTime}`,
+                meeting_date: dateValue,
+                agenda: agendaValue,
+                meeting_notes: notesValue,
+                batch_schedule: fullScheduleDetail 
             });
-            return res.json();
+            alert("Meeting Saved & Notification Sent");
+            closeModals(); 
+            loadDate();
+        } catch (err) { 
+            alert("Error: " + err.message); 
+        }
+    }
+
+    function formatTimeForOutlook(t) { 
+        let [time, ampm] = t.split(' '); 
+        let [h, m] = time.split(':'); 
+        let hour = parseInt(h);
+        if (ampm === 'PM' && hour !== 12) hour += 12; 
+        if (ampm === 'AM' && hour === 12) hour = 0; 
+        return hour.toString().padStart(2, '0') + ':' + m + ':00'; 
+    }
+
+    function runSecure(task) { if (activeUser) { task(); return; } windowTask = task; document.getElementById('authChoiceModal').style.display = 'flex'; }
+    
+    function tryAccessID() { 
+        const id = prompt("Enter Access ID:"); 
+        if (DIRECT_IDS.includes(id)) { 
+            loginSuccess(id); 
+        } else { 
+            alert("Invalid ID."); 
+        } 
+    }
+
+    function loginSuccess(user) { 
+        activeUser = user; 
+        document.getElementById('statusBadge').innerText = "Logged in: " + user.split('@')[0]; 
+        document.getElementById('authChoiceModal').style.display = 'none';
+        if(windowTask) windowTask(); 
+    }
+
+    async function handleDelete() { if (confirm("Delete this booking?")) await _supabase.from('meetings').delete().eq('id', sel.id); loadDate(); hideMenu(); }
+    async function togglePin() {
+    if (!sel) return;
+
+    const isCurrentlyPermanent = sel.is_permanent;
+    const targetTime = sel.time_slot;
+    const targetRoom = sel.room_name;
+
+    try {
+        if (!isCurrentlyPermanent) {
+            // --- PINNING LOGIC (Replicate for 10 Years) ---
+            let futureRows = [];
+            let startDate = new Date(document.getElementById('datePicker').value);
+            
+            // 3650 days is approx 10 years
+            for (let i = 0; i < 3650; i++) {
+                let d = new Date(startDate);
+                d.setDate(d.getDate() + i);
+                let dStr = d.toISOString().split('T')[0];
+                
+                futureRows.push({
+                    booked_by: sel.booked_by,
+                    agenda: sel.agenda,
+                    email: sel.email,
+                    notes: sel.notes,
+                    room_name: targetRoom,
+                    date: dStr,
+                    time_slot: targetTime,
+                    is_permanent: true
+                });
+            }
+
+            // Using upsert with a unique constraint (see step 2 below)
+            const { error } = await _supabase.from('meetings').upsert(futureRows, { 
+                onConflict: 'date,time_slot,room_name' 
+            });
+            
+            if (error) throw error;
+            alert("Pinned As Permanent.");
+
+        } else {
+            // --- UNPINNING LOGIC (Remove all except today) ---
+            const todayStr = document.getElementById('datePicker').value;
+
+            // 1. Delete ALL future instances of this permanent slot
+            const { error: deleteError } = await _supabase
+    .from('meetings')
+    .delete()
+    .eq('time_slot', targetTime)
+    .eq('room_name', targetRoom)
+    .eq('booked_by', sel.booked_by) // Add this to be specific to THIS meeting
+    .eq('is_permanent', true)
+    .gt('date', todayStr); // Use .gt (greater than) to only kill future ones
+
+            if (deleteError) throw deleteError;
+
+            // 2. Remove the "permanent" status and icon from the current slot
+            await _supabase
+                .from('meetings')
+                .update({ is_permanent: false })
+                .eq('id', sel.id);
+
+            alert("Unpinned: All future replications deleted.");
         }
 
-        function renderResult(data) {
-            document.getElementById('recordingState').classList.add('hidden');
-            document.getElementById('resultState').classList.remove('hidden');
-            document.getElementById('resDate').innerText = "Session Date: " + new Date().toLocaleString();
-            document.getElementById('resSummary').innerText = data.summary;
-            document.getElementById('resActions').innerHTML = data.actions.map(a => "• " + a).join("<br>");
-        }
-
-        function saveDoc() {
-            const content = document.querySelector('.result-section').innerText;
-            const blob = new Blob([content], {type: 'text/plain'});
-            const a = document.createElement('a');
-            a.download = `Al_Anees_Minutes_${new Date().toLocaleDateString()}.txt`;
-            a.href = URL.createObjectURL(blob);
-            a.click();
-        }
-    </script>
+        hideMenu();
+        loadDate();
+    } catch (err) {
+        alert("Error updating pin: " + err.message);
+    }
+}
+    function showMenu(e) { const menu = document.getElementById('context-menu'); menu.style.display = 'block'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px'; }
+    function editBooking() { hideMenu(); openModal(true); }
+    function hideMenu() { document.getElementById('context-menu').style.display = 'none'; }
+    function closeModals() { 
+        document.getElementById('bookingModal').style.display = 'none'; 
+        document.getElementById('authChoiceModal').style.display = 'none'; 
+    }
+    function changeDate(n) { 
+        let d = new Date(document.getElementById('datePicker').value); 
+        d.setDate(d.getDate()+n); 
+        document.getElementById('datePicker').value = d.toISOString().split('T')[0]; 
+        loadDate(); 
+    }
+    window.onload = () => { document.getElementById('datePicker').value = new Date().toISOString().split('T')[0]; loadDate(); };
+    window.onclick = () => hideMenu();
+</script>
 </body>
 </html>
