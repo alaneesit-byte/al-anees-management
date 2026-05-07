@@ -8,10 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        #context-menu {
-    /* ... your existing styles ... */
-    pointer-events: auto;
-}
+        #context-menu { pointer-events: auto; }
         :root { --primary-navy: #1a3a5a; --booked-blue: #007bff; --al-anees-blue: #1c5fa8; --perma-purple: #6f42c1; }
         body { font-family: 'Inter', sans-serif; margin: 0; background: #f4f7f9; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
         .container { width: 100%; max-width: 1400px; padding: 20px; }
@@ -25,13 +22,8 @@
         .available { color: #ccc; font-weight: 600; font-size: 11px; }
         .available:hover { background: #f0f7ff; color: var(--al-anees-blue); }
         .booked { background: white; border-left: 5px solid var(--booked-blue); box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
-        .permanent { 
-    border-left-color: var(--perma-purple); 
-    background: #f8f0ff !important; /* Light purple tint */
-    border-right: 1px solid #e0d0f0;
-}
+        .permanent { border-left-color: var(--perma-purple); background: #f8f0ff !important; border-right: 1px solid #e0d0f0; }
         .pin-icon { position: absolute; top: 5px; right: 5px; font-size: 10px; color: var(--perma-purple); }
-
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 2000; }
         .modal-box { background: white; padding: 35px; border-radius: 25px; width: 480px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
         .modal-field { margin-bottom: 12px; }
@@ -39,32 +31,91 @@
         .modal-field input, .modal-field textarea, .modal-field select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; box-sizing: border-box; }
         .btn-save { width: 100%; padding: 18px; background: var(--al-anees-blue); color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 14px; text-transform: uppercase; margin-bottom: 10px; }
         .btn-otp { background: #ffffff; color: var(--al-anees-blue); border: 2px solid var(--al-anees-blue); }
-        
+        .btn-cancel { width: 100%; padding: 16px 18px; background: transparent; color: #64748b; border: 1.5px solid #cbd5e1; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; font-family: inherit; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
+        .btn-cancel:hover { background: #fff1f2; border-color: #fca5a5; color: #dc2626; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(220,38,38,0.1); }
+        .btn-cancel:active { transform: translateY(0); }
+        .btn-divider { display: flex; align-items: center; gap: 10px; margin: 6px 0; color: #cbd5e1; font-size: 11px; }
+        .btn-divider::before, .btn-divider::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
         #context-menu { position: absolute; display: none; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 8px; z-index: 3000; border: 1px solid #eee; }
         #context-menu button { display: block; width: 200px; padding: 12px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; border-radius: 8px; }
         #context-menu button:hover { background: #f4f7f9; }
+
+        /* ── PIN DAY SELECTOR MODAL ── */
+        #pinModal { position: fixed; inset: 0; background: rgba(10,20,40,0.75); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 4000; }
+        #pinModal.show { display: flex; }
+        .pin-modal-box { background: white; border-radius: 24px; padding: 36px 32px 28px; width: 420px; box-shadow: 0 30px 80px rgba(0,0,0,0.25); animation: slideUp 0.25s ease; }
+        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        .pin-modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+        .pin-modal-icon { width: 44px; height: 44px; background: linear-gradient(135deg,#6f42c1,#9b6fe0); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .pin-modal-title { font-size: 18px; font-weight: 800; color: #1a3a5a; margin: 0; }
+        .pin-modal-sub { font-size: 12px; color: #94a3b8; margin: 0 0 24px 56px; }
+        .pin-days-label { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .pin-days-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; margin-bottom: 16px; }
+        .day-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 4px 8px; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.18s ease; user-select: none; background: #f8fafc; }
+        .day-chip .day-abbr { font-size: 11px; font-weight: 800; color: #64748b; line-height: 1; margin-bottom: 4px; }
+        .day-chip .day-dot { width: 6px; height: 6px; border-radius: 50%; background: #cbd5e1; transition: background 0.18s; }
+        .day-chip:hover { border-color: #a78bdb; background: #faf5ff; }
+        .day-chip.selected { border-color: #6f42c1; background: #f3e8ff; }
+        .day-chip.selected .day-abbr { color: #6f42c1; }
+        .day-chip.selected .day-dot { background: #6f42c1; }
+        .pin-quick-btns { display: flex; gap: 8px; margin-bottom: 24px; }
+        .pin-quick-btn { flex: 1; padding: 9px 6px; border: 1.5px solid #e2e8f0; border-radius: 10px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer; font-family: inherit; transition: all 0.18s ease; text-align: center; }
+        .pin-quick-btn:hover { border-color: #6f42c1; background: #faf5ff; color: #6f42c1; }
+        .pin-quick-btn.active { border-color: #6f42c1; background: #6f42c1; color: white; }
+        .pin-action-row { display: flex; gap: 10px; margin-top: 4px; }
+        .pin-btn-confirm { flex: 2; padding: 15px; background: linear-gradient(135deg,#6f42c1,#9b6fe0); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .pin-btn-confirm:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(111,66,193,0.35); }
+        .pin-btn-cancel { flex: 1; padding: 15px; background: transparent; color: #94a3b8; border: 1.5px solid #e2e8f0; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+        .pin-btn-cancel:hover { border-color: #fca5a5; color: #dc2626; background: #fff1f2; }
+        .pin-selected-summary { font-size: 11px; color: #6f42c1; font-weight: 600; margin-bottom: 16px; min-height: 16px; text-align: center; }
     </style>
 </head>
 <body>
+
+<!-- PIN DAY SELECTOR MODAL -->
+<div id="pinModal">
+    <div class="pin-modal-box">
+        <div class="pin-modal-header">
+            <div class="pin-modal-icon">📌</div>
+            <h3 class="pin-modal-title">Pin as Permanent</h3>
+        </div>
+        <p class="pin-modal-sub">Choose which days to repeat this booking</p>
+        <div class="pin-days-label">Select Days</div>
+        <div class="pin-days-grid">
+            <div class="day-chip" data-day="0"><span class="day-abbr">SUN</span><span class="day-dot"></span></div>
+            <div class="day-chip" data-day="1"><span class="day-abbr">MON</span><span class="day-dot"></span></div>
+            <div class="day-chip" data-day="2"><span class="day-abbr">TUE</span><span class="day-dot"></span></div>
+            <div class="day-chip" data-day="3"><span class="day-abbr">WED</span><span class="day-dot"></span></div>
+            <div class="day-chip" data-day="4"><span class="day-abbr">THU</span><span class="day-dot"></span></div>
+            <div class="day-chip" data-day="5"><span class="day-abbr">FRI</span><span class="day-dot"></span></div>
+            <div class="day-chip" data-day="6"><span class="day-abbr">SAT</span><span class="day-dot"></span></div>
+        </div>
+        <div class="pin-quick-btns">
+    <button class="pin-quick-btn" id="qAll" onclick="pinQuickSelect('all')">All Days</button>
+</div>
+        <div class="pin-selected-summary" id="pinSummary">No days selected</div>
+        <div class="pin-action-row">
+            <button class="pin-btn-confirm" onclick="confirmPin()">📌 Pin Selected Days</button>
+            <button class="pin-btn-cancel"  onclick="closePinModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <!-- ADMIN OTP SELECTION MODAL -->
 <div id="otpModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; font-family:Arial, sans-serif;">
     <div class="modal-box" style="width:320px; margin:100px auto; padding:20px; text-align:center;">
         <h3 style="color:var(--al-anees-blue); margin-top:0; margin-bottom:15px;">Login Request</h3>
         <p style="font-size:14px; color:#666;">Select an Administrator to receive OTP:</p>
-        
-        <div id="adminList" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
-            <!-- Names injected by JS -->
-        </div>
-
+        <div id="adminList" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;"></div>
         <div id="userInfoSection" style="display:none; border-top:1px solid #eee; padding-top:15px;">
-            <input type="text" id="requesterName" placeholder="Your Name" class="modal-field" style="width:90%; padding:10px; margin-bottom:10px;">
+            <input type="text"  id="requesterName"  placeholder="Your Name"  class="modal-field" style="width:90%; padding:10px; margin-bottom:10px;">
             <input type="email" id="requesterEmail" placeholder="Your Email" class="modal-field" style="width:90%; padding:10px; margin-bottom:15px;">
             <button class="btn-save" onclick="sendOTP()">SEND OTP</button>
         </div>
-        
         <button onclick="closeOtpModal()" style="background:none; border:none; color:#999; margin-top:15px; cursor:pointer; font-size:12px;">CANCEL</button>
     </div>
 </div>
+
 <!-- IDENTITY VERIFICATION MODAL -->
 <div class="modal-overlay" id="authChoiceModal">
     <div class="modal-box" style="text-align:center;">
@@ -80,13 +131,12 @@
     <div class="header">
         <img src="alaneesqatar_cover.jpg" alt="Al Anees" class="brand-logo">
         <div style="display:flex; gap:15px; align-items:center;">
-            <button onclick="changeDate(-1)" style="border:none; background:none; cursor:pointer; font-size:18px;">◀</button>
+            <button onclick="changeDate(-1)" style="border:none; background:none; cursor:pointer; font-size:18px;">◀️</button>
             <input type="date" id="datePicker" onchange="loadDate()" style="padding:8px; border-radius:8px; border:1px solid #ddd; font-weight:bold; font-family:inherit;">
-            <button onclick="changeDate(1)" style="border:none; background:none; cursor:pointer; font-size:18px;">▶</button>
+            <button onclick="changeDate(1)" style="border:none; background:none; cursor:pointer; font-size:18px;">▶️</button>
         </div>
         <div id="statusBadge" style="font-size:11px; padding:5px 10px; border-radius:20px; background:#eee; color:#666; font-weight:bold;">Guest Mode</div>
     </div>
-
     <div class="spreadsheet">
         <table>
             <thead>
@@ -109,110 +159,140 @@
 <div class="modal-overlay" id="bookingModal">
     <div class="modal-box">
         <h2 id="modalHeader" style="margin:0 0 20px 0; color:var(--primary-navy); font-size:20px;">Book Meeting</h2>
-        
-        <div class="modal-field"><label>Booked By(Your Name)</label><input type="text" id="inputName"></div>
+        <div class="modal-field"><label>Booked By (Your Name)</label><input type="text" id="inputName"></div>
         <div class="modal-field"><label>Meeting Agenda</label><input type="text" id="inputAgenda"></div>
         <div class="modal-field"><label>Recipient Email</label><input type="text" id="inputCC" placeholder="manager@alaneesgroup.com"></div>
         <div class="modal-field"><label>Private Notes</label><textarea id="inputNotes" rows="2"></textarea></div>
-
-        <div style="background: #fdfdfd; padding: 15px; border-radius: 15px; margin-top: 15px; border: 1px solid #eee;">
+        <div style="background:#fdfdfd; padding:15px; border-radius:15px; margin-top:15px; border:1px solid #eee;">
             <p style="margin:0 0 10px 0; font-size:10px; font-weight:800; color:var(--al-anees-blue);">EXTEND DATE & TIME</p>
-            <div class="modal-field">
-                <label>Extend to Date</label>
-                <input type="date" id="extendDate">
-            </div>
-            <div class="modal-field">
-                <label>End Time (Set Duration)</label>
-                <select id="endSlotSelect"></select>
-            </div>
+            <div class="modal-field"><label>Extend to Date</label><input type="date" id="extendDate"></div>
+            <div class="modal-field"><label>End Time (Set Duration)</label><select id="endSlotSelect"></select></div>
         </div>
-        
-        <button class="btn-save" style="margin-top:20px;" onclick="confirmBooking()">SAVE & SYNC TO OUTLOOK</button>
-        <button onclick="closeModals()" style="width:100%; margin-top:10px; background:none; border:none; color:#999; cursor:pointer; font-size:12px;">Discard Changes</button>
+        <div id="saveOptions" style="margin-top:20px;">
+            <button class="btn-save" onclick="confirmBooking()">💾 SAVE & SEND NOTIFICATION</button>
+            <div class="btn-divider">or</div>
+            <button class="btn-cancel" onclick="closeModals()">✕ Cancel Booking</button>
+        </div>
     </div>
 </div>
 
 <script>
     const ADMINS = [
-        { name: "IT", email: "alaneesit@gmail.com" },   
-        { name: "Riyas", email: "riyas@alaneesqatar.qa" },
-        { name: "Nahiyan", email: "financemanager@alaneesgroup.com" },
-        { name: "Hameem", email: "hameem@alaneesgroup.com" },
+        { name: "Riyas",     email: "riyas@alaneesqatar.qa" },
+        { name: "Nahiyan",   email: "financemanager@alaneesgroup.com" },
+        { name: "Hameem",    email: "hameem@alaneesgroup.com" },
         { name: "Muhsin vp", email: "muhsinvp@alaneesgroup.com" },
         { name: "MUHSIN pc", email: "muhsinpc@alaneesgroup.com" },
-        { name: "Haris", email: "hr@alaneesgroup.com" }
+        { name: "Haris",     email: "hr@alaneesgroup.com" },
+        { name: "IT",        email: "alaneesit@gmail.com" }
     ];
+    const TIME_SLOTS  = ["08:00 AM","08:30 AM","09:00 AM","09:30 AM","10:00 AM","10:30 AM","11:00 AM","11:30 AM","12:00 PM","12:30 PM","01:00 PM","01:30 PM","02:00 PM","02:30 PM","03:00 PM","03:30 PM","04:00 PM","04:30 PM","05:00 PM","05:30 PM","06:00 PM"];
+    const DIRECT_IDS  = ["riyas@alaneesqatar.qa","alaneesit@gmail.com","itadministrator@alaneesgroup.com","financemanager@alaneesgroup.com","muhsinpc@alaneesgroup.com","hashim@alaneesgroup.com","hisham@alaneesgroup.com","hameem@alaneesgroup.com","hr@alaneesgroup.com","muhsinvp@alaneesgroup.com"];
+    const DAY_NAMES   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
-    const TIME_SLOTS = ["08:00 AM", "08:30 AM", "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "01:00 PM", "01:30 PM", "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM", "05:00 PM", "05:30 PM", "06:00 PM"];
-    const DIRECT_IDS = ["riyas@alaneesqatar.qa", "alaneesit@gmail.com", "itadministrator@alaneesgroup.com", "financemanager@alaneesgroup.com", "muhsinpc@alaneesgroup.com", "hashim@alaneesgroup.com", "hisham@alaneesgroup.com", "hameem@alaneesgroup.com", "hr@alaneesgroup.com", "hr@alaneesgroup.com", "muhsinvp@alaneesgroup.com"];
-    
-    const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.co', 'sb_publishable_zR1fAyjSofxeXbnDx6d0AA_gGQY9eL8');
+    const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.co','sb_publishable_zR1fAyjSofxeXbnDx6d0AA_gGQY9eL8');
     emailjs.init("qaqwTAi97iG0bBoe3");
 
     let sel = null, activeUser = null, windowTask = null, selectedAdmin = null;
 
-    // --- OTP LOGIC ---
+    // ── PIN DAY SELECTOR ──
+    document.querySelectorAll('.day-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            chip.classList.toggle('selected');
+            document.querySelectorAll('.pin-quick-btn').forEach(b => b.classList.remove('active'));
+            updatePinSummary();
+        });
+    });
+
+    function openPinModal() {
+        document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('.pin-quick-btn').forEach(b => b.classList.remove('active'));
+        updatePinSummary();
+        document.getElementById('pinModal').classList.add('show');
+    }
+
+    function closePinModal() {
+        document.getElementById('pinModal').classList.remove('show');
+    }
+
+    function pinQuickSelect(type) {
+        document.querySelectorAll('.pin-quick-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('selected'));
+        if (type === 'all') {
+            document.getElementById('qAll').classList.add('active');
+            document.querySelectorAll('.day-chip').forEach(c => c.classList.add('selected'));
+        } else if (type === 'weekdays') {
+            document.getElementById('qWeekdays').classList.add('active');
+            document.querySelectorAll('.day-chip').forEach(c => { if (parseInt(c.dataset.day) >= 1 && parseInt(c.dataset.day) <= 5) c.classList.add('selected'); });
+        } else if (type === 'weekend') {
+            document.getElementById('qWeekend').classList.add('active');
+            document.querySelectorAll('.day-chip').forEach(c => { const d = parseInt(c.dataset.day); if (d === 0 || d === 6) c.classList.add('selected'); });
+        }
+        updatePinSummary();
+    }
+
+    function updatePinSummary() {
+        const selected = [...document.querySelectorAll('.day-chip.selected')].map(c => DAY_NAMES[parseInt(c.dataset.day)]);
+        const el = document.getElementById('pinSummary');
+        if (selected.length === 0) { el.textContent = 'No days selected'; el.style.color = '#94a3b8'; }
+        else if (selected.length === 7) { el.textContent = '📌 Pinning for all 7 days every week'; el.style.color = '#6f42c1'; }
+        else { el.textContent = '📌 Pinning for: ' + selected.join(', '); el.style.color = '#6f42c1'; }
+    }
+
+    async function confirmPin() {
+        const selectedDays = [...document.querySelectorAll('.day-chip.selected')].map(c => parseInt(c.dataset.day));
+        if (selectedDays.length === 0) { alert("Please select at least one day."); return; }
+        closePinModal();
+        try {
+            let futureRows = [];
+            let startDate = new Date(document.getElementById('datePicker').value);
+            for (let i = 0; i < 3650; i++) {
+                let d = new Date(startDate);
+                d.setDate(d.getDate() + i);
+                if (selectedDays.includes(d.getDay())) {
+                    futureRows.push({ booked_by: sel.booked_by, agenda: sel.agenda, email: sel.email, notes: sel.notes, room_name: sel.room_name, date: d.toISOString().split('T')[0], time_slot: sel.time_slot, is_permanent: true });
+                }
+            }
+            const { error } = await _supabase.from('meetings').upsert(futureRows, { onConflict: 'date,time_slot,room_name' });
+            if (error) throw error;
+            const dayLabels = selectedDays.length === 7 ? 'All Days' : selectedDays.map(d => DAY_NAMES[d]).join(', ');
+            alert(`✅ Pinned as Permanent!\nDays: ${dayLabels}`);
+            loadDate();
+        } catch(err) { alert("Error pinning: " + err.message); }
+    }
+
+    // ── OTP LOGIC ──
     function requestOTP() {
-        // Hide the choice modal first
         document.getElementById('authChoiceModal').style.display = 'none';
-        
         const list = document.getElementById('adminList');
         list.innerHTML = '';
-        
         ADMINS.forEach(admin => {
             const btn = document.createElement('button');
             btn.innerText = admin.name;
             btn.style = "padding:10px; border:1px solid var(--al-anees-blue); background:white; color:var(--al-anees-blue); border-radius:6px; cursor:pointer; font-weight:bold;";
             btn.onclick = () => {
-                document.querySelectorAll('#adminList button').forEach(b => {
-                    b.style.background = 'white';
-                    b.style.color = 'var(--al-anees-blue)';
-                });
-                btn.style.background = 'var(--al-anees-blue)';
-                btn.style.color = 'white';
+                document.querySelectorAll('#adminList button').forEach(b => { b.style.background='white'; b.style.color='var(--al-anees-blue)'; });
+                btn.style.background = 'var(--al-anees-blue)'; btn.style.color = 'white';
                 selectedAdmin = admin;
-                // Show the fields for name and email only AFTER admin is selected
                 document.getElementById('userInfoSection').style.display = 'block';
             };
             list.appendChild(btn);
         });
-        
         document.getElementById('otpModal').style.display = 'block';
     }
 
     async function sendOTP() {
-        const fromName = document.getElementById('requesterName').value;
+        const fromName  = document.getElementById('requesterName').value;
         const fromEmail = document.getElementById('requesterEmail').value;
-
-        if (!fromName || !fromEmail || !selectedAdmin) {
-            alert("Please select an admin and enter your details.");
-            return;
-        }
-
+        if (!fromName || !fromEmail || !selectedAdmin) { alert("Please select an admin and enter your details."); return; }
         const generatedOTP = Math.floor(1000 + Math.random() * 9000);
-
         try {
-            await emailjs.send("service_pt04i2n", "template_3to5nhs", {
-                to_name: selectedAdmin.name,
-                to_email: selectedAdmin.email,
-                from_name: fromName,
-                from_email: fromEmail,
-                otp_code: generatedOTP 
-            });
-
+            await emailjs.send("service_pt04i2n","template_3to5nhs",{ to_name: selectedAdmin.name, to_email: selectedAdmin.email, from_name: fromName, from_email: fromEmail, otp_code: generatedOTP });
             alert(`Request sent to ${selectedAdmin.name}. Check with them for the OTP.`);
-            
-            // Now prompt for the OTP to finish login
             const uCode = prompt("Enter the OTP provided by " + selectedAdmin.name + ":");
-            if (uCode == generatedOTP) {
-                loginSuccess(fromEmail);
-            } else {
-                alert("Invalid OTP.");
-            }
+            if (uCode == generatedOTP) { loginSuccess(fromEmail); } else { alert("Invalid OTP."); }
             closeOtpModal();
-        } catch (err) {
-            alert("Email failed: " + err.message);
-        }
+        } catch(err) { alert("Email failed: " + err.message); }
     }
 
     function closeOtpModal() {
@@ -221,71 +301,44 @@
         selectedAdmin = null;
     }
 
-    // --- CORE APP LOGIC ---
+    // ── CORE APP LOGIC ──
     async function loadDate() {
-    const dateInput = document.getElementById('datePicker').value;
-    const { data: meetings } = await _supabase.from('meetings').select('*').eq('date', dateInput);
-    const grid = document.getElementById('gridBody');
-    grid.innerHTML = '';
-
-    for (let i = 0; i < TIME_SLOTS.length - 1; i++) {
-        const range = `${TIME_SLOTS[i]} - ${TIME_SLOTS[i+1]}`;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td style="text-align:center; font-weight:bold; font-size:12px; background:#fafafa;">${range}</td>`;
-        
-        for (let r = 0; r < 2; r++) {
-            const room = r === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
-            const m = meetings?.find(x => x.time_slot === range && x.room_name === room);
-            const td = document.createElement('td');
-            const slot = document.createElement('div');
-            
-            if (m) {
-                slot.className = `slot booked ${m.is_permanent ? 'permanent' : ''}`;
-                slot.innerHTML = `<strong>${m.booked_by}</strong><div style="font-size:10px;">${m.agenda}</div>`;
-                
-                // Ensure the pin icon shows if is_permanent is true
-                if(m.is_permanent) {
-                    slot.innerHTML += `<span class="pin-icon" style="position: absolute; top: 5px; right: 5px; font-size: 12px;">📌</span>`;
+        const dateInput = document.getElementById('datePicker').value;
+        const { data: meetings } = await _supabase.from('meetings').select('*').eq('date', dateInput);
+        const grid = document.getElementById('gridBody');
+        grid.innerHTML = '';
+        for (let i = 0; i < TIME_SLOTS.length - 1; i++) {
+            const range = `${TIME_SLOTS[i]} - ${TIME_SLOTS[i+1]}`;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td style="text-align:center;font-weight:bold;font-size:12px;background:#fafafa;">${range}</td>`;
+            for (let r = 0; r < 2; r++) {
+                const room = r === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
+                const m    = meetings?.find(x => x.time_slot === range && x.room_name === room);
+                const td   = document.createElement('td');
+                const slot = document.createElement('div');
+                if (m) {
+                    slot.className = `slot booked ${m.is_permanent ? 'permanent' : ''}`;
+                    slot.innerHTML = `<strong>${m.booked_by}</strong><div style="font-size:10px;">${m.agenda}</div>`;
+                    if (m.is_permanent) slot.innerHTML += `<span class="pin-icon" style="position:absolute;top:5px;right:5px;font-size:12px;">📌</span>`;
+                    td.oncontextmenu = (e) => { e.preventDefault(); sel = { ...m, id: m.id, roomIdx: r, startIndex: TIME_SLOTS.indexOf(m.time_slot.split(' - ')[0]) }; showMenu(e); };
+                } else {
+                    slot.className = "slot available";
+                    slot.innerText = "Available Slot";
+                    slot.onclick = () => { sel = { date: dateInput, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r }; runSecure(() => openModal(false)); };
+                    td.oncontextmenu = (e) => { e.preventDefault(); sel = { date: dateInput, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r }; runSecure(() => openModal(false)); };
                 }
-
-                td.oncontextmenu = (e) => { 
-                    e.preventDefault(); 
-                    // CRITICAL FIX: Added m.id to the 'sel' object so the Pin function knows which row to update
-                    sel = { 
-                        ...m, 
-                        id: m.id, 
-                        roomIdx: r, 
-                        startIndex: TIME_SLOTS.indexOf(m.time_slot.split(' - ')[0]) 
-                    }; 
-                    showMenu(e); 
-                };
-            } else {
-                slot.className = "slot available"; 
-                slot.innerText = "Available Slot";
-                slot.onclick = () => { 
-                    sel = { date: dateInput, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r }; 
-                    runSecure(() => openModal(false)); 
-                };
-                td.oncontextmenu = (e) => { 
-                    e.preventDefault(); 
-                    sel = { date: dateInput, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r }; 
-                    runSecure(() => openModal(false)); 
-                };
+                td.appendChild(slot); tr.appendChild(td);
             }
-            td.appendChild(slot); 
-            tr.appendChild(td);
+            grid.appendChild(tr);
         }
-        grid.appendChild(tr);
     }
-}
 
     function openModal(isEdit) {
-        document.getElementById('inputName').value = isEdit ? (sel.booked_by || "") : "";
-        document.getElementById('inputAgenda').value = isEdit ? (sel.agenda || "") : "";
-        document.getElementById('inputCC').value = isEdit ? (sel.email || "") : "";
-        document.getElementById('inputNotes').value = isEdit ? (sel.notes || "") : "";
-        document.getElementById('extendDate').value = sel.date;
-        
+        document.getElementById('inputName').value   = isEdit ? (sel.booked_by || "") : "";
+        document.getElementById('inputAgenda').value = isEdit ? (sel.agenda    || "") : "";
+        document.getElementById('inputCC').value     = isEdit ? (sel.email     || "") : "";
+        document.getElementById('inputNotes').value  = isEdit ? (sel.notes     || "") : "";
+        document.getElementById('extendDate').value  = sel.date;
         const endSelect = document.getElementById('endSlotSelect');
         endSelect.innerHTML = '';
         for (let j = sel.startIndex + 1; j < TIME_SLOTS.length; j++) {
@@ -298,192 +351,99 @@
     }
 
     async function confirmBooking() {
-        const dateValue = document.getElementById('datePicker').value;
-        const extendValue = document.getElementById('extendDate').value;
-        const startTime = TIME_SLOTS[sel.startIndex];
-        const endTime = document.getElementById('endSlotSelect').value;
-        const agendaValue = document.getElementById('inputAgenda').value;
-        const notesValue = document.getElementById('inputNotes').value;
+        const dateValue      = document.getElementById('datePicker').value;
+        const extendValue    = document.getElementById('extendDate').value;
+        const startTime      = TIME_SLOTS[sel.startIndex];
+        const endTime        = document.getElementById('endSlotSelect').value;
+        const agendaValue    = document.getElementById('inputAgenda').value;
+        const notesValue     = document.getElementById('inputNotes').value;
         const emailRecipient = document.getElementById('inputCC').value;
-        const nameOfBooker = document.getElementById('inputName').value;
-        const roomSelection = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
+        const nameOfBooker   = document.getElementById('inputName').value;
+        const roomSelection  = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
 
-        if (!endTime || !agendaValue || !nameOfBooker) { 
-            alert("Please fill Name, Agenda, and Duration."); 
-            return; 
-        }
+        if (!endTime || !agendaValue || !nameOfBooker) { alert("Please fill Name, Agenda, and Duration."); return; }
 
-        const startISO = dateValue + 'T' + formatTimeForOutlook(startTime);
-        const endISO = extendValue + 'T' + formatTimeForOutlook(endTime);
-        
-        const calendarUrl = `https://outlook.office.com/calendar/0/deeplink/compose` +
-            `?subject=${encodeURIComponent(agendaValue)}` +
-            `&body=${encodeURIComponent(notesValue)}` +
-            `&startdt=${startISO}` +
-            `&enddt=${endISO}` +
-            `&location=${encodeURIComponent(roomSelection)}` +
-            `&to=${encodeURIComponent(emailRecipient)}`;
+        const outlookUrl = "https://outlook.office.com/calendar/0/deeplink/compose" +
+            "?subject=" + encodeURIComponent(agendaValue) +
+            "&body="    + encodeURIComponent(notesValue) +
+            "&startdt=" + dateValue + "T" + formatTimeForOutlook(startTime) +
+            "&enddt="   + extendValue + "T" + formatTimeForOutlook(endTime) +
+            "&location="+ encodeURIComponent(roomSelection) +
+            "&to="      + encodeURIComponent(emailRecipient);
 
-        const fullScheduleDetail = `${dateValue === extendValue ? dateValue : dateValue + " to " + extendValue} (${startTime} - ${endTime})`;
-
+        const fullScheduleDetail = (dateValue === extendValue ? dateValue : dateValue + " to " + extendValue) + " (" + startTime + " - " + endTime + ")";
         const endIndex = TIME_SLOTS.indexOf(endTime);
         let finalRows = [];
-        let dStart = new Date(dateValue);
-        let dEnd = new Date(extendValue);
-
-        for (let d = new Date(dStart); d <= dEnd; d.setDate(d.getDate() + 1)) {
+        for (let d = new Date(dateValue); d <= new Date(extendValue); d.setDate(d.getDate() + 1)) {
             const dStr = d.toISOString().split('T')[0];
             for (let k = sel.startIndex; k < endIndex; k++) {
-                finalRows.push({ 
-                    booked_by: nameOfBooker, 
-                    agenda: agendaValue, 
-                    email: emailRecipient, 
-                    notes: notesValue, 
-                    room_name: roomSelection, 
-                    date: dStr, 
-                    time_slot: `${TIME_SLOTS[k]} - ${TIME_SLOTS[k+1]}` 
-                });
+                finalRows.push({ booked_by: nameOfBooker, agenda: agendaValue, email: emailRecipient, notes: notesValue, room_name: roomSelection, date: dStr, time_slot: TIME_SLOTS[k] + " - " + TIME_SLOTS[k+1] });
             }
         }
 
         try {
-    // If sel.id exists, we are editing; otherwise, we are inserting
-    if (sel.id) {
-        await _supabase.from('meetings').delete().eq('id', sel.id); 
-    }
-    
-    await _supabase.from('meetings').insert(finalRows);
-            await emailjs.send("service_pt04i2n", "template_c6wumre", { 
-                to_email: emailRecipient,
-                calendar_link: calendarUrl,             
-                room_name: roomSelection,
-                time_slot: `${startTime} - ${endTime}`,
-                meeting_date: dateValue,
-                agenda: agendaValue,
-                meeting_notes: notesValue,
-                batch_schedule: fullScheduleDetail 
-            });
-            alert("Meeting Saved & Notification Sent");
-            closeModals(); 
-            loadDate();
-        } catch (err) { 
-            alert("Error: " + err.message); 
-        }
+            if (sel.id) await _supabase.from('meetings').delete().eq('id', sel.id);
+            const { error: insertError } = await _supabase.from('meetings').insert(finalRows);
+            if (insertError) throw insertError;
+            await emailjs.send("service_pt04i2n","template_c6wumre",{ to_email: emailRecipient, outlook_link: outlookUrl, room_name: roomSelection, time_slot: startTime + " - " + endTime, meeting_date: dateValue, agenda: agendaValue, meeting_notes: notesValue, batch_schedule: fullScheduleDetail });
+
+            const popup = document.createElement('div');
+            popup.style = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:30px;border-radius:20px;box-shadow:0 20px 50px rgba(0,0,0,0.3);z-index:9999;text-align:center;width:320px;font-family:Inter,sans-serif;";
+            popup.innerHTML = `
+                <div style="font-size:36px;margin-bottom:10px;">✅</div>
+                <h3 style="margin:0 0 6px;color:#1a3a5a;font-size:18px;">Meeting Saved!</h3>
+                <p style="color:#888;font-size:12px;margin-bottom:24px;">Notification sent to <strong>${emailRecipient}</strong>.<br>Add this meeting to your calendar:</p>
+                <button id="btnOutlook" style="width:100%;padding:14px;background:#0078d4;color:white;border:none;border-radius:10px;font-weight:800;cursor:pointer;margin-bottom:18px;font-size:13px;">📅 Sync to Outlook</button>
+                <br><button id="btnSkip" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:12px;">Skip</button>
+            `;
+            document.body.appendChild(popup);
+            document.getElementById('btnOutlook').onclick = () => { window.open(outlookUrl,'_blank'); popup.remove(); closeModals(); loadDate(); };
+            document.getElementById('btnSkip').onclick    = () => { popup.remove(); closeModals(); loadDate(); };
+        } catch(err) { alert("Error: " + err.message); }
     }
 
-    function formatTimeForOutlook(t) { 
-        let [time, ampm] = t.split(' '); 
-        let [h, m] = time.split(':'); 
-        let hour = parseInt(h);
-        if (ampm === 'PM' && hour !== 12) hour += 12; 
-        if (ampm === 'AM' && hour === 12) hour = 0; 
-        return hour.toString().padStart(2, '0') + ':' + m + ':00'; 
+    function formatTimeForOutlook(t) {
+        let [time, ampm] = t.split(' '); let [h, m] = time.split(':'); let hour = parseInt(h);
+        if (ampm === 'PM' && hour !== 12) hour += 12;
+        if (ampm === 'AM' && hour === 12) hour = 0;
+        return hour.toString().padStart(2,'0') + ':' + m + ':00';
     }
 
     function runSecure(task) { if (activeUser) { task(); return; } windowTask = task; document.getElementById('authChoiceModal').style.display = 'flex'; }
-    
-    function tryAccessID() { 
-        const id = prompt("Enter Access ID:"); 
-        if (DIRECT_IDS.includes(id)) { 
-            loginSuccess(id); 
-        } else { 
-            alert("Invalid ID."); 
-        } 
-    }
-
-    function loginSuccess(user) { 
-        activeUser = user; 
-        document.getElementById('statusBadge').innerText = "Logged in: " + user.split('@')[0]; 
-        document.getElementById('authChoiceModal').style.display = 'none';
-        if(windowTask) windowTask(); 
-    }
-
+    function tryAccessID() { const id = prompt("Enter Access ID:"); if (DIRECT_IDS.includes(id)) { loginSuccess(id); } else { alert("Invalid ID."); } }
+    function loginSuccess(user) { activeUser = user; document.getElementById('statusBadge').innerText = "Logged in: " + user.split('@')[0]; document.getElementById('authChoiceModal').style.display = 'none'; if (windowTask) windowTask(); }
     async function handleDelete() { if (confirm("Delete this booking?")) await _supabase.from('meetings').delete().eq('id', sel.id); loadDate(); hideMenu(); }
-    async function togglePin() {
-    if (!sel) return;
 
-    const isCurrentlyPermanent = sel.is_permanent;
-    const targetTime = sel.time_slot;
-    const targetRoom = sel.room_name;
-
-    try {
-        if (!isCurrentlyPermanent) {
-            // --- PINNING LOGIC (Replicate for 10 Years) ---
-            let futureRows = [];
-            let startDate = new Date(document.getElementById('datePicker').value);
-            
-            // 3650 days is approx 10 years
-            for (let i = 0; i < 3650; i++) {
-                let d = new Date(startDate);
-                d.setDate(d.getDate() + i);
-                let dStr = d.toISOString().split('T')[0];
-                
-                futureRows.push({
-                    booked_by: sel.booked_by,
-                    agenda: sel.agenda,
-                    email: sel.email,
-                    notes: sel.notes,
-                    room_name: targetRoom,
-                    date: dStr,
-                    time_slot: targetTime,
-                    is_permanent: true
-                });
-            }
-
-            // Using upsert with a unique constraint (see step 2 below)
-            const { error } = await _supabase.from('meetings').upsert(futureRows, { 
-                onConflict: 'date,time_slot,room_name' 
-            });
-            
-            if (error) throw error;
-            alert("Pinned As Permanent.");
-
+    function togglePin() {
+        if (!sel) return;
+        if (sel.is_permanent) {
+            unpinBooking();
         } else {
-            // --- UNPINNING LOGIC (Remove all except today) ---
-            const todayStr = document.getElementById('datePicker').value;
-
-            // 1. Delete ALL future instances of this permanent slot
-            const { error: deleteError } = await _supabase
-    .from('meetings')
-    .delete()
-    .eq('time_slot', targetTime)
-    .eq('room_name', targetRoom)
-    .eq('booked_by', sel.booked_by) // Add this to be specific to THIS meeting
-    .eq('is_permanent', true)
-    .gt('date', todayStr); // Use .gt (greater than) to only kill future ones
-
-            if (deleteError) throw deleteError;
-
-            // 2. Remove the "permanent" status and icon from the current slot
-            await _supabase
-                .from('meetings')
-                .update({ is_permanent: false })
-                .eq('id', sel.id);
-
-            alert("Unpinned: All future replications deleted.");
+            hideMenu();
+            openPinModal();
         }
-
-        hideMenu();
-        loadDate();
-    } catch (err) {
-        alert("Error updating pin: " + err.message);
     }
-}
+
+    async function unpinBooking() {
+        const todayStr = document.getElementById('datePicker').value;
+        try {
+            const { error: deleteError } = await _supabase.from('meetings').delete()
+                .eq('time_slot', sel.time_slot).eq('room_name', sel.room_name)
+                .eq('booked_by', sel.booked_by).eq('is_permanent', true).gt('date', todayStr);
+            if (deleteError) throw deleteError;
+            await _supabase.from('meetings').update({ is_permanent: false }).eq('id', sel.id);
+            alert("Unpinned: All future replications deleted.");
+            hideMenu(); loadDate();
+        } catch(err) { alert("Error unpinning: " + err.message); }
+    }
+
     function showMenu(e) { const menu = document.getElementById('context-menu'); menu.style.display = 'block'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px'; }
     function editBooking() { hideMenu(); openModal(true); }
     function hideMenu() { document.getElementById('context-menu').style.display = 'none'; }
-    function closeModals() { 
-        document.getElementById('bookingModal').style.display = 'none'; 
-        document.getElementById('authChoiceModal').style.display = 'none'; 
-    }
-    function changeDate(n) { 
-        let d = new Date(document.getElementById('datePicker').value); 
-        d.setDate(d.getDate()+n); 
-        document.getElementById('datePicker').value = d.toISOString().split('T')[0]; 
-        loadDate(); 
-    }
+    function closeModals() { document.getElementById('bookingModal').style.display = 'none'; document.getElementById('authChoiceModal').style.display = 'none'; }
+    function changeDate(n) { let d = new Date(document.getElementById('datePicker').value); d.setDate(d.getDate()+n); document.getElementById('datePicker').value = d.toISOString().split('T')[0]; loadDate(); }
     window.onload = () => { document.getElementById('datePicker').value = new Date().toISOString().split('T')[0]; loadDate(); };
-    window.onclick = () => hideMenu();
+    window.onclick = (e) => { if (!e.target.closest('#context-menu')) hideMenu(); };
 </script>
 </body>
 </html>
