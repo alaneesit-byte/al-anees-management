@@ -3,480 +3,1033 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Al Anees - Executive Meeting System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Audiowide&display=swap" rel="stylesheet">
+    <title>Al Anees — Executive Meeting Schedule</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        #context-menu { pointer-events: auto; }
-        :root { --primary-navy: #1a3a5a; --booked-blue: #007bff; --al-anees-blue: #1c5fa8; --perma-purple: #6f42c1; }
-        body { font-family: 'Inter', sans-serif; margin: 0; background: #f4f7f9; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
-        .container { width: 100%; max-width: 1400px; padding: 20px; }
-        .header { background: white; padding: 15px 30px; border-radius: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .brand-logo { height: 60px; }
-        .spreadsheet { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th { background: #f8f9fa; padding: 15px; color: var(--primary-navy); border-bottom: 2px solid #eee; font-size: 13px; }
-        td { border: 1px solid #eee; height: 85px; padding: 5px; }
-        .slot { width: 100%; height: 100%; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; position: relative; }
-        .available { color: #ccc; font-weight: 600; font-size: 11px; }
-        .available:hover { background: #f0f7ff; color: var(--al-anees-blue); }
-        .booked { background: white; border-left: 5px solid var(--booked-blue); box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
-        .permanent { border-left-color: var(--perma-purple); background: #f8f0ff !important; border-right: 1px solid #e0d0f0; }
-        .pin-icon { position: absolute; top: 5px; right: 5px; font-size: 10px; color: var(--perma-purple); }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 2000; }
-        .modal-box { background: white; padding: 35px; border-radius: 25px; width: 480px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
-        .modal-field { margin-bottom: 12px; }
-        .modal-field label { display: block; font-size: 11px; font-weight: 800; margin-bottom: 5px; color: #555; text-transform: uppercase; }
-        .modal-field input, .modal-field textarea, .modal-field select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-family: inherit; box-sizing: border-box; }
-        .btn-save { width: 100%; padding: 18px; background: var(--al-anees-blue); color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 14px; text-transform: uppercase; margin-bottom: 10px; }
-        .btn-otp { background: #ffffff; color: var(--al-anees-blue); border: 2px solid var(--al-anees-blue); }
-        .btn-cancel { width: 100%; padding: 16px 18px; background: transparent; color: #64748b; border: 1.5px solid #cbd5e1; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; font-family: inherit; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
-        .btn-cancel:hover { background: #fff1f2; border-color: #fca5a5; color: #dc2626; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(220,38,38,0.1); }
-        .btn-cancel:active { transform: translateY(0); }
-        .btn-divider { display: flex; align-items: center; gap: 10px; margin: 6px 0; color: #cbd5e1; font-size: 11px; }
-        .btn-divider::before, .btn-divider::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
-        #context-menu { position: absolute; display: none; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 8px; z-index: 3000; border: 1px solid #eee; }
-        #context-menu button { display: block; width: 200px; padding: 12px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; border-radius: 8px; }
-        #context-menu button:hover { background: #f4f7f9; }
+        :root {
+            --navy:      #0d2540;
+            --blue:      #1c5fa8;
+            --blue-mid:  #2a7fd4;
+            --blue-light:#e8f2fc;
+            --purple:    #5b3fa0;
+            --purple-bg: #f2eeff;
+            --booked:    #1c5fa8;
+            --available: #d1e8ff;
+            --bg:        #f0f4f9;
+            --card:      #ffffff;
+            --border:    #dde4ef;
+            --text:      #0d2540;
+            --muted:     #7a8fab;
+            --success:   #0d9e6e;
+            --danger:    #e03e3e;
+        }
 
-        /* ── PIN DAY SELECTOR MODAL ── */
-        #pinModal { position: fixed; inset: 0; background: rgba(10,20,40,0.75); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 4000; }
-        #pinModal.show { display: flex; }
-        .pin-modal-box { background: white; border-radius: 24px; padding: 36px 32px 28px; width: 420px; box-shadow: 0 30px 80px rgba(0,0,0,0.25); animation: slideUp 0.25s ease; }
-        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-        .pin-modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
-        .pin-modal-icon { width: 44px; height: 44px; background: linear-gradient(135deg,#6f42c1,#9b6fe0); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-        .pin-modal-title { font-size: 18px; font-weight: 800; color: #1a3a5a; margin: 0; }
-        .pin-modal-sub { font-size: 12px; color: #94a3b8; margin: 0 0 24px 56px; }
-        .pin-days-label { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
-        .pin-days-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; margin-bottom: 16px; }
-        .day-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 4px 8px; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.18s ease; user-select: none; background: #f8fafc; }
-        .day-chip .day-abbr { font-size: 11px; font-weight: 800; color: #64748b; line-height: 1; margin-bottom: 4px; }
-        .day-chip .day-dot { width: 6px; height: 6px; border-radius: 50%; background: #cbd5e1; transition: background 0.18s; }
-        .day-chip:hover { border-color: #a78bdb; background: #faf5ff; }
-        .day-chip.selected { border-color: #6f42c1; background: #f3e8ff; }
-        .day-chip.selected .day-abbr { color: #6f42c1; }
-        .day-chip.selected .day-dot { background: #6f42c1; }
-        .pin-quick-btns { display: flex; gap: 8px; margin-bottom: 24px; }
-        .pin-quick-btn { flex: 1; padding: 9px 6px; border: 1.5px solid #e2e8f0; border-radius: 10px; background: #f8fafc; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer; font-family: inherit; transition: all 0.18s ease; text-align: center; }
-        .pin-quick-btn:hover { border-color: #6f42c1; background: #faf5ff; color: #6f42c1; }
-        .pin-quick-btn.active { border-color: #6f42c1; background: #6f42c1; color: white; }
-        .pin-action-row { display: flex; gap: 10px; margin-top: 4px; }
-        .pin-btn-confirm { flex: 2; padding: 15px; background: linear-gradient(135deg,#6f42c1,#9b6fe0); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .pin-btn-confirm:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(111,66,193,0.35); }
-        .pin-btn-cancel { flex: 1; padding: 15px; background: transparent; color: #94a3b8; border: 1.5px solid #e2e8f0; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
-        .pin-btn-cancel:hover { border-color: #fca5a5; color: #dc2626; background: #fff1f2; }
-        .pin-selected-summary { font-size: 11px; color: #6f42c1; font-weight: 600; margin-bottom: 16px; min-height: 16px; text-align: center; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            color: var(--text);
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: var(--navy);
+            padding: 0 32px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 20px rgba(13,37,64,0.3);
+        }
+        .header-logo { height: 44px; object-fit: contain; }
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            padding: 6px 14px;
+        }
+        .nav-btn {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.15s;
+            line-height: 1;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        #datePicker {
+            background: none;
+            border: none;
+            color: white;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            outline: none;
+            padding: 4px;
+        }
+        #datePicker::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.7; cursor: pointer; }
+        .day-label {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            font-weight: 500;
+            border-left: 1px solid rgba(255,255,255,0.15);
+            padding-left: 12px;
+        }
+        #statusBadge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.8);
+            letter-spacing: 0.3px;
+        }
+        #statusBadge.logged-in {
+            background: rgba(13,158,110,0.2);
+            border-color: rgba(13,158,110,0.4);
+            color: #4adeaf;
+        }
+
+        /* ── MAIN LAYOUT ── */
+        .main { padding: 28px 24px; max-width: 1320px; margin: 0 auto; }
+
+        /* ── ROOM LEGEND ── */
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .legend-dot {
+            width: 10px; height: 10px; border-radius: 3px;
+        }
+
+        /* ── GRID ── */
+        .grid-wrap {
+            background: var(--card);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(13,37,64,0.08);
+            border: 1px solid var(--border);
+        }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        thead tr { background: var(--navy); }
+        th {
+            padding: 16px 12px;
+            color: rgba(255,255,255,0.9);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: left;
+        }
+        th:first-child { width: 150px; text-align: center; }
+        td {
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            height: 80px;
+            padding: 6px;
+            vertical-align: top;
+        }
+        td:last-child { border-right: none; }
+        tr:last-child td { border-bottom: none; }
+        .time-cell {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            background: #f8fafd;
+            vertical-align: middle !important;
+            letter-spacing: 0.3px;
+        }
+        .time-cell span { display: block; font-size: 13px; color: var(--navy); font-weight: 700; }
+        .time-cell small { color: var(--muted); font-weight: 500; }
+
+        /* ── SLOTS ── */
+        .slot {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            position: relative;
+            padding: 8px;
+            text-align: center;
+        }
+        .slot.available {
+            border: 1.5px dashed #c5d8ef;
+            color: #a0b4c8;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .slot.available:hover {
+            background: var(--blue-light);
+            border-color: var(--blue-mid);
+            color: var(--blue);
+            border-style: solid;
+            transform: scale(0.98);
+        }
+        .slot.booked {
+            background: linear-gradient(135deg, #e8f2fc 0%, #dbeeff 100%);
+            border-left: 4px solid var(--booked);
+            text-align: left;
+            padding-left: 12px;
+            align-items: flex-start;
+        }
+        .slot.booked:hover { filter: brightness(0.96); }
+        .slot.permanent {
+            background: linear-gradient(135deg, var(--purple-bg) 0%, #e8e0ff 100%);
+            border-left-color: var(--purple);
+        }
+        .slot-name {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--navy);
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+        .slot-agenda {
+            font-size: 10px;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            margin-top: 2px;
+        }
+        .pin-badge {
+            position: absolute;
+            top: 5px; right: 5px;
+            font-size: 10px;
+        }
+
+        /* ── MODALS ── */
+        .overlay {
+            position: fixed; inset: 0;
+            background: rgba(10,20,40,0.6);
+            backdrop-filter: blur(6px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .overlay.active { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 24px;
+            padding: 36px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 30px 80px rgba(13,37,64,0.25);
+            animation: modalIn 0.22s ease;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(16px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .modal-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 22px;
+            color: var(--navy);
+            margin-bottom: 6px;
+        }
+        .modal-sub {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 28px;
+        }
+        .field { margin-bottom: 16px; }
+        .field label {
+            display: block;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+        .field input, .field textarea, .field select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            color: var(--navy);
+            transition: border-color 0.15s;
+            background: #fafcff;
+            outline: none;
+        }
+        .field input:focus, .field textarea:focus, .field select:focus {
+            border-color: var(--blue-mid);
+            background: white;
+        }
+        .field textarea { resize: vertical; min-height: 70px; }
+        .section-box {
+            background: #f8fafd;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .section-box-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--blue);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: all 0.18s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: var(--navy);
+            color: white;
+        }
+        .btn-primary:hover { background: #112e52; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(13,37,64,0.25); }
+        .btn-outline {
+            background: transparent;
+            color: var(--blue);
+            border: 2px solid var(--blue);
+            margin-top: 8px;
+        }
+        .btn-outline:hover { background: var(--blue-light); }
+        .btn-ghost {
+            background: transparent;
+            color: var(--muted);
+            border: 1.5px solid var(--border);
+            margin-top: 8px;
+        }
+        .btn-ghost:hover { border-color: #fca5a5; color: var(--danger); background: #fff1f2; }
+        .btn-danger-soft {
+            background: #fff1f2;
+            color: var(--danger);
+            border: 1.5px solid #fca5a5;
+        }
+        .btn-danger-soft:hover { background: var(--danger); color: white; }
+        .divider {
+            display: flex; align-items: center; gap: 10px;
+            color: var(--border); font-size: 11px; margin: 10px 0;
+        }
+        .divider::before, .divider::after { content:''; flex:1; height:1px; background: var(--border); }
+
+        /* ── CONTEXT MENU ── */
+        #ctxMenu {
+            position: fixed;
+            display: none;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 12px 40px rgba(13,37,64,0.18);
+            padding: 8px;
+            z-index: 3000;
+            border: 1px solid var(--border);
+            min-width: 200px;
+            animation: modalIn 0.15s ease;
+        }
+        .ctx-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 11px 14px;
+            border: none;
+            background: none;
+            text-align: left;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            color: var(--navy);
+            border-radius: 8px;
+            transition: background 0.12s;
+        }
+        .ctx-item:hover { background: var(--bg); }
+        .ctx-item.danger { color: var(--danger); }
+        .ctx-item.danger:hover { background: #fff1f2; }
+        .ctx-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+        /* ── PIN MODAL ── */
+        #pinModal {
+            position: fixed; inset: 0;
+            background: rgba(10,20,40,0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 4000;
+            padding: 20px;
+        }
+        #pinModal.active { display: flex; }
+        .pin-box {
+            background: white;
+            border-radius: 24px;
+            padding: 36px 32px 28px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 30px 80px rgba(13,37,64,0.25);
+            animation: modalIn 0.22s ease;
+        }
+        .pin-header { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+        .pin-icon-box {
+            width: 46px; height: 46px;
+            background: linear-gradient(135deg, var(--purple), #8b6ee0);
+            border-radius: 13px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; flex-shrink: 0;
+        }
+        .pin-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--navy); }
+        .pin-sub { font-size: 12px; color: var(--muted); margin: 4px 0 24px 60px; }
+        .days-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .days-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 7px; margin-bottom: 12px; }
+        .day-chip {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 10px 4px 8px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+            background: #f8fafc;
+        }
+        .day-chip .abbr { font-size: 10px; font-weight: 800; color: var(--muted); margin-bottom: 5px; }
+        .day-chip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border); transition: background 0.15s; }
+        .day-chip:hover { border-color: #a78bdb; background: var(--purple-bg); }
+        .day-chip.sel { border-color: var(--purple); background: var(--purple-bg); }
+        .day-chip.sel .abbr { color: var(--purple); }
+        .day-chip.sel .dot { background: var(--purple); }
+        .pin-quick { display: flex; gap: 8px; margin-bottom: 20px; }
+        .pin-q-btn {
+            flex: 1; padding: 9px 6px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            background: #f8fafc;
+            font-size: 11px; font-weight: 700;
+            color: var(--muted);
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .pin-q-btn:hover { border-color: var(--purple); color: var(--purple); background: var(--purple-bg); }
+        .pin-q-btn.active { border-color: var(--purple); background: var(--purple); color: white; }
+        .pin-summary { font-size: 11px; color: var(--purple); font-weight: 600; min-height: 16px; text-align: center; margin-bottom: 16px; }
+        .pin-actions { display: flex; gap: 10px; }
+        .pin-confirm {
+            flex: 2; padding: 15px;
+            background: linear-gradient(135deg, var(--purple), #8b6ee0);
+            color: white; border: none; border-radius: 12px;
+            font-weight: 700; font-size: 13px;
+            cursor: pointer; font-family: 'DM Sans', sans-serif;
+            transition: all 0.18s; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .pin-confirm:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(91,63,160,0.35); }
+        .pin-cancel-btn {
+            flex: 1; padding: 15px;
+            background: transparent; color: var(--muted);
+            border: 1.5px solid var(--border); border-radius: 12px;
+            font-weight: 700; font-size: 13px;
+            cursor: pointer; font-family: 'DM Sans', sans-serif;
+            transition: all 0.18s;
+        }
+        .pin-cancel-btn:hover { border-color: #fca5a5; color: var(--danger); background: #fff1f2; }
+
+        /* ── OTP MODAL ── */
+        #otpModal {
+            position: fixed; inset: 0;
+            background: rgba(10,20,40,0.6);
+            backdrop-filter: blur(6px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2500;
+            padding: 20px;
+        }
+        #otpModal.active { display: flex; }
+        .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .admin-btn {
+            padding: 11px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            background: white;
+            color: var(--navy);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .admin-btn:hover { border-color: var(--blue-mid); background: var(--blue-light); }
+        .admin-btn.selected { border-color: var(--blue); background: var(--blue); color: white; }
+
+        /* ── SUCCESS POPUP ── */
+        .success-popup {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            background: white;
+            padding: 36px;
+            border-radius: 24px;
+            box-shadow: 0 30px 80px rgba(13,37,64,0.25);
+            z-index: 9999;
+            text-align: center;
+            width: 320px;
+            animation: modalIn 0.22s ease;
+        }
+        .success-icon { font-size: 48px; margin-bottom: 12px; }
+        .success-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--navy); margin-bottom: 6px; }
+        .success-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+        /* ── LOADING ── */
+        .loading-row td {
+            text-align: center;
+            padding: 60px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #ccd6e8; border-radius: 3px; }
     </style>
 </head>
 <body>
 
-<!-- PIN DAY SELECTOR MODAL -->
-<div id="pinModal">
-    <div class="pin-modal-box">
-        <div class="pin-modal-header">
-            <div class="pin-modal-icon">📌</div>
-            <h3 class="pin-modal-title">Pin as Permanent</h3>
-        </div>
-        <p class="pin-modal-sub">Choose which days to repeat this booking</p>
-        <div class="pin-days-label">Select Days</div>
-        <div class="pin-days-grid">
-            <div class="day-chip" data-day="0"><span class="day-abbr">SUN</span><span class="day-dot"></span></div>
-            <div class="day-chip" data-day="1"><span class="day-abbr">MON</span><span class="day-dot"></span></div>
-            <div class="day-chip" data-day="2"><span class="day-abbr">TUE</span><span class="day-dot"></span></div>
-            <div class="day-chip" data-day="3"><span class="day-abbr">WED</span><span class="day-dot"></span></div>
-            <div class="day-chip" data-day="4"><span class="day-abbr">THU</span><span class="day-dot"></span></div>
-            <div class="day-chip" data-day="5"><span class="day-abbr">FRI</span><span class="day-dot"></span></div>
-            <div class="day-chip" data-day="6"><span class="day-abbr">SAT</span><span class="day-dot"></span></div>
-        </div>
-        <div class="pin-quick-btns">
-    <button class="pin-quick-btn" id="qAll" onclick="pinQuickSelect('all')">All Days</button>
-</div>
-        <div class="pin-selected-summary" id="pinSummary">No days selected</div>
-        <div class="pin-action-row">
-            <button class="pin-btn-confirm" onclick="confirmPin()">📌 Pin Selected Days</button>
-            <button class="pin-btn-cancel"  onclick="closePinModal()">Cancel</button>
-        </div>
-    </div>
-</div>
+<!-- HEADER -->
+<header class="header">
+    <img src="alaneesqatar_cover.jpg" alt="Al Anees" class="header-logo" onerror="this.style.display='none'; document.getElementById('headerTitle').style.display='block'">
+    <span id="headerTitle" style="display:none; font-family:'DM Serif Display',serif; font-size:20px; color:white; letter-spacing:1px;">AL ANEES</span>
 
-<!-- ADMIN OTP SELECTION MODAL -->
-<div id="otpModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; font-family:Arial, sans-serif;">
-    <div class="modal-box" style="width:320px; margin:100px auto; padding:20px; text-align:center;">
-        <h3 style="color:var(--al-anees-blue); margin-top:0; margin-bottom:15px;">Login Request</h3>
-        <p style="font-size:14px; color:#666;">Select an Administrator to receive OTP:</p>
-        <div id="adminList" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;"></div>
-        <div id="userInfoSection" style="display:none; border-top:1px solid #eee; padding-top:15px;">
-            <input type="text"  id="requesterName"  placeholder="Your Name"  class="modal-field" style="width:90%; padding:10px; margin-bottom:10px;">
-            <input type="email" id="requesterEmail" placeholder="Your Email" class="modal-field" style="width:90%; padding:10px; margin-bottom:15px;">
-            <button class="btn-save" onclick="sendOTP()">SEND OTP</button>
-        </div>
-        <button onclick="closeOtpModal()" style="background:none; border:none; color:#999; margin-top:15px; cursor:pointer; font-size:12px;">CANCEL</button>
+    <div class="header-center">
+        <button class="nav-btn" onclick="changeDate(-1)">&#9664;</button>
+        <input type="date" id="datePicker" onchange="loadDate()">
+        <span class="day-label" id="dayLabel"></span>
+        <button class="nav-btn" onclick="changeDate(1)">&#9654;</button>
     </div>
-</div>
 
-<!-- IDENTITY VERIFICATION MODAL -->
-<div class="modal-overlay" id="authChoiceModal">
-    <div class="modal-box" style="text-align:center;">
-        <h2 style="color:var(--primary-navy); margin-top:0;">Identity Verification</h2>
-        <p style="font-size:14px; color:#666; margin-bottom:25px;">Please login to manage this meeting.</p>
-        <button class="btn-save" onclick="tryAccessID()">ACCESS ID LOGIN</button>
-        <button class="btn-save btn-otp" onclick="requestOTP()">EMAIL OTP LOGIN</button>
-        <button onclick="closeModals()" style="margin-top:15px; border:none; background:none; color:#999; cursor:pointer; font-weight:600;">Cancel</button>
-    </div>
-</div>
+    <div id="statusBadge">Guest Mode</div>
+</header>
 
-<div class="container">
-    <div class="header">
-        <img src="alaneesqatar_cover.jpg" alt="Al Anees" class="brand-logo">
-        <div style="display:flex; gap:15px; align-items:center;">
-            <button onclick="changeDate(-1)" style="border:none; background:none; cursor:pointer; font-size:18px;">◀️</button>
-            <input type="date" id="datePicker" onchange="loadDate()" style="padding:8px; border-radius:8px; border:1px solid #ddd; font-weight:bold; font-family:inherit;">
-            <button onclick="changeDate(1)" style="border:none; background:none; cursor:pointer; font-size:18px;">▶️</button>
-        </div>
-        <div id="statusBadge" style="font-size:11px; padding:5px 10px; border-radius:20px; background:#eee; color:#666; font-weight:bold;">Guest Mode</div>
+<!-- MAIN -->
+<div class="main">
+    <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--booked);"></div> Booked</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--purple);"></div> Permanent</div>
+        <div class="legend-item"><div class="legend-dot" style="border:2px dashed #c5d8ef; background:transparent;"></div> Available</div>
     </div>
-    <div class="spreadsheet">
+    <div class="grid-wrap">
         <table>
             <thead>
-                <tr><th style="width:160px">TIME</th><th>MEETING ROOM (BIG)</th><th>MEETING ROOM (SMALL)</th></tr>
+                <tr>
+                    <th style="text-align:center;">TIME</th>
+                    <th>🏛 MEETING ROOM (BIG)</th>
+                    <th>🪑 MEETING ROOM (SMALL)</th>
+                </tr>
             </thead>
-            <tbody id="gridBody"></tbody>
+            <tbody id="gridBody">
+                <tr class="loading-row"><td colspan="3">Loading schedule…</td></tr>
+            </tbody>
         </table>
     </div>
 </div>
 
 <!-- CONTEXT MENU -->
-<div id="context-menu">
-    <button onclick="runSecure(editBooking)">✏️ Edit Booking</button>
-    <button id="pinBtn" onclick="runSecure(togglePin)">📌 Pin / Unpin Permanent</button>
-    <hr style="border:0; border-top:1px solid #eee;">
-    <button onclick="runSecure(handleDelete)" style="color:red;">🗑️ Delete Booking</button>
+<div id="ctxMenu">
+    <button class="ctx-item" onclick="runSecure(editBooking)">✏️ Edit Booking</button>
+    <button class="ctx-item" id="pinBtn" onclick="runSecure(togglePin)">📌 Pin / Unpin Permanent</button>
+    <div class="ctx-sep"></div>
+    <button class="ctx-item danger" onclick="runSecure(handleDelete)">🗑️ Delete Booking</button>
 </div>
 
 <!-- BOOKING MODAL -->
-<div class="modal-overlay" id="bookingModal">
-    <div class="modal-box">
-        <h2 id="modalHeader" style="margin:0 0 20px 0; color:var(--primary-navy); font-size:20px;">Book Meeting</h2>
-        <div class="modal-field"><label>Booked By (Your Name)</label><input type="text" id="inputName"></div>
-        <div class="modal-field"><label>Meeting Agenda</label><input type="text" id="inputAgenda"></div>
-        <div class="modal-field"><label>Recipient Email</label><input type="text" id="inputCC" placeholder="manager@alaneesgroup.com"></div>
-        <div class="modal-field"><label>Private Notes</label><textarea id="inputNotes" rows="2"></textarea></div>
-        <div style="background:#fdfdfd; padding:15px; border-radius:15px; margin-top:15px; border:1px solid #eee;">
-            <p style="margin:0 0 10px 0; font-size:10px; font-weight:800; color:var(--al-anees-blue);">EXTEND DATE & TIME</p>
-            <div class="modal-field"><label>Extend to Date</label><input type="date" id="extendDate"></div>
-            <div class="modal-field"><label>End Time (Set Duration)</label><select id="endSlotSelect"></select></div>
+<div class="overlay" id="bookingOverlay">
+    <div class="modal">
+        <h2 class="modal-title" id="modalTitle">Book a Meeting</h2>
+        <p class="modal-sub" id="modalSub">Fill in the details below</p>
+
+        <div class="field"><label>Booked By (Your Name)</label><input type="text" id="inputName" placeholder="e.g. Mohamed Sajid"></div>
+        <div class="field"><label>Meeting Agenda</label><input type="text" id="inputAgenda" placeholder="e.g. Weekly Sync"></div>
+        <div class="field"><label>Recipient Email</label><input type="email" id="inputCC" placeholder="manager@alaneesgroup.com"></div>
+        <div class="field"><label>Private Notes</label><textarea id="inputNotes" placeholder="Optional internal notes…"></textarea></div>
+
+        <div class="section-box">
+            <div class="section-box-label">⏱ Duration & Date</div>
+            <div class="field"><label>Extend to Date</label><input type="date" id="extendDate"></div>
+            <div class="field"><label>End Time</label><select id="endSlotSelect"></select></div>
         </div>
-        <div id="saveOptions" style="margin-top:20px;">
-            <button class="btn-save" onclick="confirmBooking()">💾 SAVE & SEND NOTIFICATION</button>
-            <div class="btn-divider">or</div>
-            <button class="btn-cancel" onclick="closeModals()">✕ Cancel Booking</button>
+
+        <button class="btn btn-primary" onclick="confirmBooking()">💾 Save & Send Notification</button>
+        <div class="divider">or</div>
+        <button class="btn btn-ghost" onclick="closeBooking()">✕ Cancel</button>
+    </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="overlay" id="authOverlay">
+    <div class="modal" style="max-width:380px; text-align:center;">
+        <h2 class="modal-title">Identity Verification</h2>
+        <p class="modal-sub">Please login to manage this meeting.</p>
+        <button class="btn btn-primary" onclick="tryAccessID()">🔑 Access ID Login</button>
+        <div class="divider">or</div>
+        <button class="btn btn-outline" onclick="requestOTP()">📧 Email OTP Login</button>
+        <button onclick="closeAuth()" style="margin-top:16px; background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; font-family:inherit;">Cancel</button>
+    </div>
+</div>
+
+<!-- OTP MODAL -->
+<div id="otpModal">
+    <div class="modal" style="max-width:400px;">
+        <h2 class="modal-title">Login Request</h2>
+        <p class="modal-sub">Select an administrator to receive the OTP</p>
+        <div class="admin-grid" id="adminList"></div>
+        <div id="userInfoSection" style="display:none;">
+            <div class="field"><label>Your Name</label><input type="text" id="requesterName" placeholder="Your full name"></div>
+            <div class="field"><label>Your Email</label><input type="email" id="requesterEmail" placeholder="your@email.com"></div>
+            <button class="btn btn-primary" onclick="sendOTP()">📨 Send OTP</button>
+        </div>
+        <button onclick="closeOtpModal()" style="margin-top:12px; background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px; width:100%; font-family:inherit;">Cancel</button>
+    </div>
+</div>
+
+<!-- PIN MODAL -->
+<div id="pinModal">
+    <div class="pin-box">
+        <div class="pin-header">
+            <div class="pin-icon-box">📌</div>
+            <h3 class="pin-title">Pin as Permanent</h3>
+        </div>
+        <p class="pin-sub">Choose which days to repeat this booking</p>
+        <div class="days-label">Select Days</div>
+        <div class="days-grid">
+            <div class="day-chip" data-day="0"><span class="abbr">SUN</span><span class="dot"></span></div>
+            <div class="day-chip" data-day="1"><span class="abbr">MON</span><span class="dot"></span></div>
+            <div class="day-chip" data-day="2"><span class="abbr">TUE</span><span class="dot"></span></div>
+            <div class="day-chip" data-day="3"><span class="abbr">WED</span><span class="dot"></span></div>
+            <div class="day-chip" data-day="4"><span class="abbr">THU</span><span class="dot"></span></div>
+            <div class="day-chip" data-day="5"><span class="abbr">FRI</span><span class="dot"></span></div>
+            <div class="day-chip" data-day="6"><span class="abbr">SAT</span><span class="dot"></span></div>
+        </div>
+        <div class="pin-quick">
+            <button class="pin-q-btn" id="qAll" onclick="pinQuick('all')">All Days</button>
+            <button class="pin-q-btn" id="qWeekdays" onclick="pinQuick('weekdays')">Weekdays</button>
+            <button class="pin-q-btn" id="qWeekend" onclick="pinQuick('weekend')">Weekend</button>
+        </div>
+        <div class="pin-summary" id="pinSummary">No days selected</div>
+        <div class="pin-actions">
+            <button class="pin-confirm" onclick="confirmPin()">📌 Pin Selected Days</button>
+            <button class="pin-cancel-btn" onclick="closePinModal()">Cancel</button>
         </div>
     </div>
 </div>
 
 <script>
-    const ADMINS = [
-        { name: "Riyas",     email: "riyas@alaneesqatar.qa" },
-        { name: "Nahiyan",   email: "financemanager@alaneesgroup.com" },
-        { name: "Hameem",    email: "hameem@alaneesgroup.com" },
-        { name: "Muhsin vp", email: "muhsinvp@alaneesgroup.com" },
-        { name: "MUHSIN pc", email: "muhsinpc@alaneesgroup.com" },
-        { name: "Haris",     email: "hr@alaneesgroup.com" },
-        { name: "IT",        email: "alaneesit@gmail.com" }
-    ];
-    const TIME_SLOTS  = ["08:00 AM","08:30 AM","09:00 AM","09:30 AM","10:00 AM","10:30 AM","11:00 AM","11:30 AM","12:00 PM","12:30 PM","01:00 PM","01:30 PM","02:00 PM","02:30 PM","03:00 PM","03:30 PM","04:00 PM","04:30 PM","05:00 PM","05:30 PM","06:00 PM"];
-    const DIRECT_IDS  = ["riyas@alaneesqatar.qa","alaneesit@gmail.com","itadministrator@alaneesgroup.com","financemanager@alaneesgroup.com","muhsinpc@alaneesgroup.com","hashim@alaneesgroup.com","hisham@alaneesgroup.com","hameem@alaneesgroup.com","hr@alaneesgroup.com","muhsinvp@alaneesgroup.com"];
-    const DAY_NAMES   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-
-   // Use these exact values for the qhrnqbdljapnvnidnxwt project
-const SUPABASE_URL = 'https://qhrnqbdljapnvnidnxwt.supabase.co/rest/v1/';
+// ── CONFIG ──
+const SUPABASE_URL = 'https://qhrnqbdljapnvnidnxwt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFocm5xYmRsamFwbnZuaWRueHd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTE3ODQsImV4cCI6MjA5MTg4Nzc4NH0.AH_46AjKAPXdQ2soG5b987Dqzmf3VIisOWPPAV5bqKw';
+const EMAILJS_SERVICE  = 'service_pt04i2n';
+const EMAILJS_TEMPLATE_BOOKING = 'template_c6wumre';
+const EMAILJS_TEMPLATE_OTP     = 'template_3to5nhs';
+const EMAILJS_PUBLIC   = 'qaqwTAi97iG0bBoe3';
 
-const _supabase = supabase.createClient('https://qhrnqbdljapnvnidnxwt.supabase.co/rest/v1/','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFocm5xYmRsamFwbnZuaWRueHd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTE3ODQsImV4cCI6MjA5MTg4Nzc4NH0.AH_46AjKAPXdQ2soG5b987Dqzmf3VIisOWPPAV5bqKw');
-    emailjs.init("qaqwTAi97iG0bBoe3");
+const ADMINS = [
+    { name: "Riyas",     email: "riyas@alaneesqatar.qa" },
+    { name: "Nahiyan",   email: "financemanager@alaneesgroup.com" },
+    { name: "Hameem",    email: "hameem@alaneesgroup.com" },
+    { name: "Muhsin VP", email: "muhsinvp@alaneesgroup.com" },
+    { name: "Muhsin PC", email: "muhsinpc@alaneesgroup.com" },
+    { name: "Haris",     email: "hr@alaneesgroup.com" },
+    { name: "IT",        email: "alaneesit@gmail.com" }
+];
+const DIRECT_IDS = [
+    "riyas@alaneesqatar.qa","alaneesit@gmail.com","itadministrator@alaneesgroup.com",
+    "financemanager@alaneesgroup.com","muhsinpc@alaneesgroup.com","hashim@alaneesgroup.com",
+    "hisham@alaneesgroup.com","hameem@alaneesgroup.com","hr@alaneesgroup.com","muhsinvp@alaneesgroup.com"
+];
+const TIME_SLOTS = [
+    "08:00 AM","08:30 AM","09:00 AM","09:30 AM","10:00 AM","10:30 AM",
+    "11:00 AM","11:30 AM","12:00 PM","12:30 PM","01:00 PM","01:30 PM",
+    "02:00 PM","02:30 PM","03:00 PM","03:30 PM","04:00 PM","04:30 PM",
+    "05:00 PM","05:30 PM","06:00 PM"
+];
+const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const ROOMS = ["Meeting Room (Big)", "Meeting Room (Small)"];
 
-    let sel = null, activeUser = null, windowTask = null, selectedAdmin = null;
+// ── INIT ──
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+emailjs.init(EMAILJS_PUBLIC);
 
-    // ── PIN DAY SELECTOR ──
-    document.querySelectorAll('.day-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            chip.classList.toggle('selected');
-            document.querySelectorAll('.pin-quick-btn').forEach(b => b.classList.remove('active'));
-            updatePinSummary();
-        });
-    });
+let sel = null, activeUser = null, windowTask = null, selectedAdmin = null;
 
-    function openPinModal() {
-        document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('selected'));
-        document.querySelectorAll('.pin-quick-btn').forEach(b => b.classList.remove('active'));
-        updatePinSummary();
-        document.getElementById('pinModal').classList.add('show');
-    }
+// ── DATE HELPERS ──
+function getDateValue() { return document.getElementById('datePicker').value; }
+function updateDayLabel() {
+    const d = new Date(getDateValue() + 'T00:00:00');
+    document.getElementById('dayLabel').textContent = DAY_NAMES[d.getDay()];
+}
+function changeDate(n) {
+    const d = new Date(getDateValue());
+    d.setDate(d.getDate() + n);
+    document.getElementById('datePicker').value = d.toISOString().split('T')[0];
+    loadDate();
+}
 
-    function closePinModal() {
-        document.getElementById('pinModal').classList.remove('show');
-    }
+// ── LOAD GRID ──
+async function loadDate() {
+    updateDayLabel();
+    const date = getDateValue();
+    const grid = document.getElementById('gridBody');
+    grid.innerHTML = '<tr class="loading-row"><td colspan="3">Loading…</td></tr>';
 
-    function pinQuickSelect(type) {
-        document.querySelectorAll('.pin-quick-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('selected'));
-        if (type === 'all') {
-            document.getElementById('qAll').classList.add('active');
-            document.querySelectorAll('.day-chip').forEach(c => c.classList.add('selected'));
-        } else if (type === 'weekdays') {
-            document.getElementById('qWeekdays').classList.add('active');
-            document.querySelectorAll('.day-chip').forEach(c => { if (parseInt(c.dataset.day) >= 1 && parseInt(c.dataset.day) <= 5) c.classList.add('selected'); });
-        } else if (type === 'weekend') {
-            document.getElementById('qWeekend').classList.add('active');
-            document.querySelectorAll('.day-chip').forEach(c => { const d = parseInt(c.dataset.day); if (d === 0 || d === 6) c.classList.add('selected'); });
-        }
-        updatePinSummary();
-    }
+    const { data: meetings, error } = await _sb.from('meetings').select('*').eq('date', date);
+    if (error) { grid.innerHTML = `<tr class="loading-row"><td colspan="3" style="color:var(--danger)">Error: ${error.message}</td></tr>`; return; }
 
-    function updatePinSummary() {
-        const selected = [...document.querySelectorAll('.day-chip.selected')].map(c => DAY_NAMES[parseInt(c.dataset.day)]);
-        const el = document.getElementById('pinSummary');
-        if (selected.length === 0) { el.textContent = 'No days selected'; el.style.color = '#94a3b8'; }
-        else if (selected.length === 7) { el.textContent = '📌 Pinning for all 7 days every week'; el.style.color = '#6f42c1'; }
-        else { el.textContent = '📌 Pinning for: ' + selected.join(', '); el.style.color = '#6f42c1'; }
-    }
+    grid.innerHTML = '';
+    for (let i = 0; i < TIME_SLOTS.length - 1; i++) {
+        const range = `${TIME_SLOTS[i]} - ${TIME_SLOTS[i+1]}`;
+        const tr = document.createElement('tr');
 
-    async function confirmPin() {
-        const selectedDays = [...document.querySelectorAll('.day-chip.selected')].map(c => parseInt(c.dataset.day));
-        if (selectedDays.length === 0) { alert("Please select at least one day."); return; }
-        closePinModal();
-        try {
-            let futureRows = [];
-            let startDate = new Date(document.getElementById('datePicker').value);
-            for (let i = 0; i < 3650; i++) {
-                let d = new Date(startDate);
-                d.setDate(d.getDate() + i);
-                if (selectedDays.includes(d.getDay())) {
-                    futureRows.push({ booked_by: sel.booked_by, agenda: sel.agenda, email: sel.email, notes: sel.notes, room_name: sel.room_name, date: d.toISOString().split('T')[0], time_slot: sel.time_slot, is_permanent: true });
-                }
+        // time cell
+        const [start] = range.split(' - ');
+        const [time, ampm] = start.split(' ');
+        const tdTime = document.createElement('td');
+        tdTime.className = 'time-cell';
+        tdTime.innerHTML = `<span>${time}</span><small>${ampm}</small>`;
+        tr.appendChild(tdTime);
+
+        for (let r = 0; r < 2; r++) {
+            const room = ROOMS[r];
+            const m = meetings?.find(x => x.time_slot === range && x.room_name === room);
+            const td = document.createElement('td');
+            const slot = document.createElement('div');
+
+            if (m) {
+                slot.className = `slot booked${m.is_permanent ? ' permanent' : ''}`;
+                slot.innerHTML = `
+                    <div class="slot-name">${m.booked_by}</div>
+                    <div class="slot-agenda">${m.agenda || ''}</div>
+                    ${m.is_permanent ? '<span class="pin-badge">📌</span>' : ''}
+                `;
+                td.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    sel = { ...m, roomIdx: r, startIndex: TIME_SLOTS.indexOf(m.time_slot.split(' - ')[0]) };
+                    showCtxMenu(e);
+                };
+            } else {
+                slot.className = 'slot available';
+                slot.textContent = '+ Available';
+                slot.onclick = () => {
+                    sel = { date, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r };
+                    runSecure(() => openBookingModal(false));
+                };
+                td.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    sel = { date, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r };
+                    runSecure(() => openBookingModal(false));
+                };
             }
-            const { error } = await _supabase.from('meetings').upsert(futureRows, { onConflict: 'date,time_slot,room_name' });
-            if (error) throw error;
-            const dayLabels = selectedDays.length === 7 ? 'All Days' : selectedDays.map(d => DAY_NAMES[d]).join(', ');
-            alert(`✅ Pinned as Permanent!\nDays: ${dayLabels}`);
-            loadDate();
-        } catch(err) { alert("Error pinning: " + err.message); }
-    }
-
-    // ── OTP LOGIC ──
-    function requestOTP() {
-        document.getElementById('authChoiceModal').style.display = 'none';
-        const list = document.getElementById('adminList');
-        list.innerHTML = '';
-        ADMINS.forEach(admin => {
-            const btn = document.createElement('button');
-            btn.innerText = admin.name;
-            btn.style = "padding:10px; border:1px solid var(--al-anees-blue); background:white; color:var(--al-anees-blue); border-radius:6px; cursor:pointer; font-weight:bold;";
-            btn.onclick = () => {
-                document.querySelectorAll('#adminList button').forEach(b => { b.style.background='white'; b.style.color='var(--al-anees-blue)'; });
-                btn.style.background = 'var(--al-anees-blue)'; btn.style.color = 'white';
-                selectedAdmin = admin;
-                document.getElementById('userInfoSection').style.display = 'block';
-            };
-            list.appendChild(btn);
-        });
-        document.getElementById('otpModal').style.display = 'block';
-    }
-
-    async function sendOTP() {
-        const fromName  = document.getElementById('requesterName').value;
-        const fromEmail = document.getElementById('requesterEmail').value;
-        if (!fromName || !fromEmail || !selectedAdmin) { alert("Please select an admin and enter your details."); return; }
-        const generatedOTP = Math.floor(1000 + Math.random() * 9000);
-        try {
-            await emailjs.send("service_pt04i2n","template_3to5nhs",{ to_name: selectedAdmin.name, to_email: selectedAdmin.email, from_name: fromName, from_email: fromEmail, otp_code: generatedOTP });
-            alert(`Request sent to ${selectedAdmin.name}. Check with them for the OTP.`);
-            const uCode = prompt("Enter the OTP provided by " + selectedAdmin.name + ":");
-            if (uCode == generatedOTP) { loginSuccess(fromEmail); } else { alert("Invalid OTP."); }
-            closeOtpModal();
-        } catch(err) { alert("Email failed: " + err.message); }
-    }
-
-    function closeOtpModal() {
-        document.getElementById('otpModal').style.display = 'none';
-        document.getElementById('userInfoSection').style.display = 'none';
-        selectedAdmin = null;
-    }
-
-    // ── CORE APP LOGIC ──
-    async function loadDate() {
-        const dateInput = document.getElementById('datePicker').value;
-        const { data: meetings } = await _supabase.from('meetings').select('*').eq('date', dateInput);
-        const grid = document.getElementById('gridBody');
-        grid.innerHTML = '';
-        for (let i = 0; i < TIME_SLOTS.length - 1; i++) {
-            const range = `${TIME_SLOTS[i]} - ${TIME_SLOTS[i+1]}`;
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td style="text-align:center;font-weight:bold;font-size:12px;background:#fafafa;">${range}</td>`;
-            for (let r = 0; r < 2; r++) {
-                const room = r === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
-                const m    = meetings?.find(x => x.time_slot === range && x.room_name === room);
-                const td   = document.createElement('td');
-                const slot = document.createElement('div');
-                if (m) {
-                    slot.className = `slot booked ${m.is_permanent ? 'permanent' : ''}`;
-                    slot.innerHTML = `<strong>${m.booked_by}</strong><div style="font-size:10px;">${m.agenda}</div>`;
-                    if (m.is_permanent) slot.innerHTML += `<span class="pin-icon" style="position:absolute;top:5px;right:5px;font-size:12px;">📌</span>`;
-                    td.oncontextmenu = (e) => { e.preventDefault(); sel = { ...m, id: m.id, roomIdx: r, startIndex: TIME_SLOTS.indexOf(m.time_slot.split(' - ')[0]) }; showMenu(e); };
-                } else {
-                    slot.className = "slot available";
-                    slot.innerText = "Available Slot";
-                    slot.onclick = () => { sel = { date: dateInput, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r }; runSecure(() => openModal(false)); };
-                    td.oncontextmenu = (e) => { e.preventDefault(); sel = { date: dateInput, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r }; runSecure(() => openModal(false)); };
-                }
-                td.appendChild(slot); tr.appendChild(td);
-            }
-            grid.appendChild(tr);
+            td.appendChild(slot);
+            tr.appendChild(td);
         }
+        grid.appendChild(tr);
+    }
+}
+
+// ── BOOKING MODAL ──
+function openBookingModal(isEdit) {
+    document.getElementById('inputName').value   = isEdit ? (sel.booked_by || '') : '';
+    document.getElementById('inputAgenda').value = isEdit ? (sel.agenda    || '') : '';
+    document.getElementById('inputCC').value     = isEdit ? (sel.email     || '') : '';
+    document.getElementById('inputNotes').value  = isEdit ? (sel.notes     || '') : '';
+    document.getElementById('extendDate').value  = sel.date || getDateValue();
+
+    const endSel = document.getElementById('endSlotSelect');
+    endSel.innerHTML = '';
+    for (let j = sel.startIndex + 1; j < TIME_SLOTS.length; j++) {
+        const opt = document.createElement('option');
+        opt.value = TIME_SLOTS[j]; opt.textContent = TIME_SLOTS[j];
+        endSel.appendChild(opt);
     }
 
-    function openModal(isEdit) {
-        document.getElementById('inputName').value   = isEdit ? (sel.booked_by || "") : "";
-        document.getElementById('inputAgenda').value = isEdit ? (sel.agenda    || "") : "";
-        document.getElementById('inputCC').value     = isEdit ? (sel.email     || "") : "";
-        document.getElementById('inputNotes').value  = isEdit ? (sel.notes     || "") : "";
-        document.getElementById('extendDate').value  = sel.date;
-        const endSelect = document.getElementById('endSlotSelect');
-        endSelect.innerHTML = '';
-        for (let j = sel.startIndex + 1; j < TIME_SLOTS.length; j++) {
-            let opt = document.createElement('option');
-            opt.value = TIME_SLOTS[j]; opt.innerText = TIME_SLOTS[j];
-            endSelect.appendChild(opt);
-        }
-        if (endSelect.options.length > 0) endSelect.selectedIndex = 0;
-        document.getElementById('bookingModal').style.display = 'flex';
-    }
+    const roomName = ROOMS[sel.roomIdx];
+    document.getElementById('modalTitle').textContent = isEdit ? 'Edit Booking' : 'Book a Meeting';
+    document.getElementById('modalSub').textContent = `${roomName} · ${TIME_SLOTS[sel.startIndex]}`;
+    document.getElementById('bookingOverlay').classList.add('active');
+}
+function closeBooking() { document.getElementById('bookingOverlay').classList.remove('active'); }
 
-    async function confirmBooking() {
-    const dateValue      = document.getElementById('datePicker').value;
-    const extendValue    = document.getElementById('extendDate').value;
-    const startTime      = TIME_SLOTS[sel.startIndex];
-    const endTime        = document.getElementById('endSlotSelect').value;
-    const agendaValue    = document.getElementById('inputAgenda').value;
-    const notesValue     = document.getElementById('inputNotes').value;
-    const emailRecipient = document.getElementById('inputCC').value;
-    const nameOfBooker   = document.getElementById('inputName').value;
-    const roomSelection  = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
+// ── CONFIRM BOOKING ──
+async function confirmBooking() {
+    const date      = getDateValue();
+    const extend    = document.getElementById('extendDate').value;
+    const startTime = TIME_SLOTS[sel.startIndex];
+    const endTime   = document.getElementById('endSlotSelect').value;
+    const agenda    = document.getElementById('inputAgenda').value.trim();
+    const notes     = document.getElementById('inputNotes').value.trim();
+    const email     = document.getElementById('inputCC').value.trim();
+    const name      = document.getElementById('inputName').value.trim();
+    const room      = ROOMS[sel.roomIdx];
 
-    if (!endTime || !agendaValue || !nameOfBooker) { 
-        alert("Please fill Name, Agenda, and Duration."); 
-        return; 
-    }
+    if (!name || !agenda || !endTime) { alert('Please fill in Name, Agenda, and End Time.'); return; }
 
-    // 1. Generate the Outlook Link
-    const outlookUrl = "https://outlook.office.com/calendar/0/deeplink/compose" +
-        "?subject=" + encodeURIComponent(agendaValue) +
-        "&body="    + encodeURIComponent(notesValue) +
-        "&startdt=" + dateValue + "T" + formatTimeForOutlook(startTime) +
-        "&enddt="   + extendValue + "T" + formatTimeForOutlook(endTime) +
-        "&location="+ encodeURIComponent(roomSelection) +
-        "&to="      + encodeURIComponent(emailRecipient);
-
-    // 2. Prepare Database Rows
     const endIndex = TIME_SLOTS.indexOf(endTime);
-    let finalRows = [];
-    let dStart = new Date(dateValue);
-    let dEnd = new Date(extendValue);
-
-    for (let d = new Date(dStart); d <= dEnd; d.setDate(d.getDate() + 1)) {
+    const rows = [];
+    for (let d = new Date(date); d <= new Date(extend); d.setDate(d.getDate() + 1)) {
         const dStr = d.toISOString().split('T')[0];
         for (let k = sel.startIndex; k < endIndex; k++) {
-            finalRows.push({ 
-                booked_by: nameOfBooker, agenda: agendaValue, email: emailRecipient, 
-                notes: notesValue, room_name: roomSelection, date: dStr, 
-                time_slot: TIME_SLOTS[k] + " - " + TIME_SLOTS[k+1] 
-            });
+            rows.push({ booked_by: name, agenda, email, notes, room_name: room, date: dStr, time_slot: TIME_SLOTS[k] + ' - ' + TIME_SLOTS[k+1], is_permanent: false });
         }
     }
+
+    const outlookUrl = "https://outlook.office.com/calendar/0/deeplink/compose" +
+        "?subject=" + encodeURIComponent(agenda) +
+        "&body=" + encodeURIComponent(notes) +
+        "&startdt=" + date + "T" + fmtTime(startTime) +
+        "&enddt=" + extend + "T" + fmtTime(endTime) +
+        "&location=" + encodeURIComponent(room) +
+        "&to=" + encodeURIComponent(email);
 
     try {
-        // Step A: Attempt Database Save
-        if (sel.id) await _supabase.from('meetings').delete().eq('id', sel.id);
-        const { error: dbError } = await _supabase.from('meetings').insert(finalRows);
-        
-        if (dbError) throw new Error("Database Error: " + dbError.message);
+        if (sel.id) await _sb.from('meetings').delete().eq('id', sel.id);
+        const { error } = await _sb.from('meetings').insert(rows);
+        if (error) throw error;
 
-        // Step B: Send Email Notification
-        await emailjs.send("service_pt04i2n", "template_c6wumre", { 
-            to_email: emailRecipient, outlook_link: outlookUrl, 
-            room_name: roomSelection, time_slot: startTime + " - " + endTime, 
-            meeting_date: dateValue, agenda: agendaValue 
-        });
-
-        // Step C: Show Success & Sync Button
-        showOutlookPopup(outlookUrl, emailRecipient);
-
-    } catch (err) {
-        console.error("Critical Error:", err);
-        alert("Connection Error: Could not reach the server. Please check your internet or Supabase URL.");
-    }
-}
-
-function showOutlookPopup(url, email) {
-    const popup = document.createElement('div');
-    popup.style = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:30px;border-radius:20px;box-shadow:0 20px 50px rgba(0,0,0,0.3);z-index:9999;text-align:center;width:320px;font-family:sans-serif;";
-    popup.innerHTML = `
-        <div style="font-size:36px;margin-bottom:10px;">✅</div>
-        <h3 style="margin:0 0 6px;color:#1a3a5a;font-size:18px;">Meeting Saved!</h3>
-        <p style="color:#888;font-size:12px;margin-bottom:24px;">Sent to <strong>${email}</strong>.</p>
-        <button id="btnSync" style="width:100%;padding:14px;background:#0078d4;color:white;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">📅 Sync to Outlook</button>
-        <br><button id="btnClose" style="margin-top:15px;background:none;border:none;color:#aaa;cursor:pointer;font-size:12px;">Close</button>
-    `;
-    document.body.appendChild(popup);
-    document.getElementById('btnSync').onclick = () => { window.open(url, '_blank'); finalize(); };
-    document.getElementById('btnClose').onclick = () => { finalize(); };
-    function finalize() { popup.remove(); closeModals(); loadDate(); }
-}
-
-    function formatTimeForOutlook(t) {
-        let [time, ampm] = t.split(' '); let [h, m] = time.split(':'); let hour = parseInt(h);
-        if (ampm === 'PM' && hour !== 12) hour += 12;
-        if (ampm === 'AM' && hour === 12) hour = 0;
-        return hour.toString().padStart(2,'0') + ':' + m + ':00';
-    }
-
-    function runSecure(task) { if (activeUser) { task(); return; } windowTask = task; document.getElementById('authChoiceModal').style.display = 'flex'; }
-    function tryAccessID() { const id = prompt("Enter Access ID:"); if (DIRECT_IDS.includes(id)) { loginSuccess(id); } else { alert("Invalid ID."); } }
-    function loginSuccess(user) { activeUser = user; document.getElementById('statusBadge').innerText = "Logged in: " + user.split('@')[0]; document.getElementById('authChoiceModal').style.display = 'none'; if (windowTask) windowTask(); }
-    async function handleDelete() { if (confirm("Delete this booking?")) await _supabase.from('meetings').delete().eq('id', sel.id); loadDate(); hideMenu(); }
-
-    function togglePin() {
-        if (!sel) return;
-        if (sel.is_permanent) {
-            unpinBooking();
-        } else {
-            hideMenu();
-            openPinModal();
+        if (email) {
+            await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE_BOOKING, {
+                to_email: email, outlook_link: outlookUrl,
+                room_name: room, time_slot: startTime + ' - ' + endTime,
+                meeting_date: date, agenda
+            });
         }
-    }
 
-    async function unpinBooking() {
-        const todayStr = document.getElementById('datePicker').value;
-        try {
-            const { error: deleteError } = await _supabase.from('meetings').delete()
-                .eq('time_slot', sel.time_slot).eq('room_name', sel.room_name)
-                .eq('booked_by', sel.booked_by).eq('is_permanent', true).gt('date', todayStr);
-            if (deleteError) throw deleteError;
-            await _supabase.from('meetings').update({ is_permanent: false }).eq('id', sel.id);
-            alert("Unpinned: All future replications deleted.");
-            hideMenu(); loadDate();
-        } catch(err) { alert("Error unpinning: " + err.message); }
+        closeBooking();
+        showSuccess(outlookUrl, email);
+    } catch(err) {
+        console.error(err);
+        alert('Error saving booking: ' + err.message);
     }
+}
 
-    function showMenu(e) { const menu = document.getElementById('context-menu'); menu.style.display = 'block'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px'; }
-    function editBooking() { hideMenu(); openModal(true); }
-    function hideMenu() { document.getElementById('context-menu').style.display = 'none'; }
-    function closeModals() { document.getElementById('bookingModal').style.display = 'none'; document.getElementById('authChoiceModal').style.display = 'none'; }
-    function changeDate(n) { let d = new Date(document.getElementById('datePicker').value); d.setDate(d.getDate()+n); document.getElementById('datePicker').value = d.toISOString().split('T')[0]; loadDate(); }
-    window.onload = () => { document.getElementById('datePicker').value = new Date().toISOString().split('T')[0]; loadDate(); };
-    window.onclick = (e) => { if (!e.target.closest('#context-menu')) hideMenu(); };
+function fmtTime(t) {
+    let [time, ampm] = t.split(' ');
+    let [h, m] = time.split(':');
+    let hour = parseInt(h);
+    if (ampm === 'PM' && hour !== 12) hour += 12;
+    if (ampm === 'AM' && hour === 12) hour = 0;
+    return hour.toString().padStart(2,'0') + ':' + m + ':00';
+}
+
+// ── SUCCESS POPUP ──
+function showSuccess(url, email) {
+    const p = document.createElement('div');
+    p.className = 'success-popup';
+    p.innerHTML = `
+        <div class="success-icon">✅</div>
+        <div class="success-title">Booking Saved!</div>
+        <div class="success-sub">${email ? `Notification sent to <strong>${email}</strong>` : 'Booking saved successfully.'}</div>
+        <button onclick="window.open('${url}','_blank'); this.closest('.success-popup').remove(); loadDate();"
+            style="width:100%;padding:14px;background:var(--blue);color:white;border:none;border-radius:12px;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px;margin-bottom:8px;">
+            📅 Sync to Outlook
+        </button>
+        <button onclick="this.closest('.success-popup').remove(); loadDate();"
+            style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;font-family:inherit;">
+            Close
+        </button>
+    `;
+    document.body.appendChild(p);
+}
+
+// ── CONTEXT MENU ──
+function showCtxMenu(e) {
+    const menu = document.getElementById('ctxMenu');
+    document.getElementById('pinBtn').textContent = sel.is_permanent ? '📌 Unpin Permanent' : '📌 Pin as Permanent';
+    menu.style.display = 'block';
+    menu.style.left = Math.min(e.pageX, window.innerWidth - 220) + 'px';
+    menu.style.top  = Math.min(e.pageY, window.innerHeight - 150) + 'px';
+}
+function hideCtxMenu() { document.getElementById('ctxMenu').style.display = 'none'; }
+function editBooking() { hideCtxMenu(); openBookingModal(true); }
+async function handleDelete() {
+    if (!confirm('Delete this booking?')) return;
+    await _sb.from('meetings').delete().eq('id', sel.id);
+    hideCtxMenu(); loadDate();
+}
+
+// ── PIN ──
+function togglePin() { sel.is_permanent ? unpinBooking() : (hideCtxMenu(), openPinModal()); }
+function openPinModal() {
+    document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('sel'));
+    document.querySelectorAll('.pin-q-btn').forEach(b => b.classList.remove('active'));
+    updatePinSummary();
+    document.getElementById('pinModal').classList.add('active');
+}
+function closePinModal() { document.getElementById('pinModal').classList.remove('active'); }
+document.querySelectorAll('.day-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+        chip.classList.toggle('sel');
+        document.querySelectorAll('.pin-q-btn').forEach(b => b.classList.remove('active'));
+        updatePinSummary();
+    });
+});
+function pinQuick(type) {
+    document.querySelectorAll('.pin-q-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('sel'));
+    if (type === 'all') { document.getElementById('qAll').classList.add('active'); document.querySelectorAll('.day-chip').forEach(c => c.classList.add('sel')); }
+    else if (type === 'weekdays') { document.getElementById('qWeekdays').classList.add('active'); document.querySelectorAll('.day-chip').forEach(c => { if (parseInt(c.dataset.day) >= 1 && parseInt(c.dataset.day) <= 5) c.classList.add('sel'); }); }
+    else if (type === 'weekend') { document.getElementById('qWeekend').classList.add('active'); document.querySelectorAll('.day-chip').forEach(c => { const d = parseInt(c.dataset.day); if (d === 0 || d === 6) c.classList.add('sel'); }); }
+    updatePinSummary();
+}
+function updatePinSummary() {
+    const days = [...document.querySelectorAll('.day-chip.sel')].map(c => DAY_NAMES[parseInt(c.dataset.day)]);
+    document.getElementById('pinSummary').textContent = days.length ? days.join(', ') : 'No days selected';
+}
+async function confirmPin() {
+    const days = [...document.querySelectorAll('.day-chip.sel')].map(c => parseInt(c.dataset.day));
+    if (!days.length) { alert('Please select at least one day.'); return; }
+    try {
+        const rows = [];
+        const start = new Date(getDateValue());
+        for (let i = 0; i < 3650; i++) {
+            const d = new Date(start); d.setDate(d.getDate() + i);
+            if (days.includes(d.getDay())) {
+                rows.push({ booked_by: sel.booked_by, agenda: sel.agenda, email: sel.email, notes: sel.notes, room_name: sel.room_name, date: d.toISOString().split('T')[0], time_slot: sel.time_slot, is_permanent: true });
+            }
+        }
+        const { error } = await _sb.from('meetings').upsert(rows, { onConflict: 'date,time_slot,room_name' });
+        if (error) throw error;
+        alert(`✅ Pinned as Permanent!\nDays: ${days.length === 7 ? 'All Days' : days.map(d => DAY_NAMES[d]).join(', ')}`);
+        closePinModal(); loadDate();
+    } catch(err) { alert('Error pinning: ' + err.message); }
+}
+async function unpinBooking() {
+    const today = getDateValue();
+    try {
+        await _sb.from('meetings').delete().eq('time_slot', sel.time_slot).eq('room_name', sel.room_name).eq('booked_by', sel.booked_by).eq('is_permanent', true).gt('date', today);
+        await _sb.from('meetings').update({ is_permanent: false }).eq('id', sel.id);
+        alert('Unpinned: All future replications deleted.');
+        hideCtxMenu(); loadDate();
+    } catch(err) { alert('Error unpinning: ' + err.message); }
+}
+
+// ── AUTH ──
+function runSecure(task) {
+    if (activeUser) { task(); return; }
+    windowTask = task;
+    document.getElementById('authOverlay').classList.add('active');
+}
+function closeAuth() { document.getElementById('authOverlay').classList.remove('active'); }
+function tryAccessID() {
+    const id = prompt('Enter your Access ID:');
+    if (DIRECT_IDS.includes(id)) { loginSuccess(id); }
+    else { alert('Invalid Access ID.'); }
+}
+function loginSuccess(user) {
+    activeUser = user;
+    const badge = document.getElementById('statusBadge');
+    badge.textContent = '● ' + user.split('@')[0];
+    badge.classList.add('logged-in');
+    closeAuth();
+    if (windowTask) { windowTask(); windowTask = null; }
+}
+
+// ── OTP ──
+function requestOTP() {
+    closeAuth();
+    const list = document.getElementById('adminList');
+    list.innerHTML = '';
+    ADMINS.forEach(admin => {
+        const btn = document.createElement('button');
+        btn.className = 'admin-btn';
+        btn.textContent = admin.name;
+        btn.onclick = () => {
+            document.querySelectorAll('.admin-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedAdmin = admin;
+            document.getElementById('userInfoSection').style.display = 'block';
+        };
+        list.appendChild(btn);
+    });
+    document.getElementById('userInfoSection').style.display = 'none';
+    document.getElementById('otpModal').classList.add('active');
+}
+async function sendOTP() {
+    const name  = document.getElementById('requesterName').value.trim();
+    const email = document.getElementById('requesterEmail').value.trim();
+    if (!name || !email || !selectedAdmin) { alert('Please select an admin and enter your details.'); return; }
+    const otp = Math.floor(1000 + Math.random() * 9000);
+    try {
+        await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE_OTP, { to_name: selectedAdmin.name, to_email: selectedAdmin.email, from_name: name, from_email: email, otp_code: otp });
+        alert(`OTP sent to ${selectedAdmin.name}. Please ask them for the code.`);
+        const entered = prompt(`Enter the OTP provided by ${selectedAdmin.name}:`);
+        if (parseInt(entered) === otp) { closeOtpModal(); loginSuccess(email); }
+        else { alert('Invalid OTP.'); }
+    } catch(err) { alert('Email error: ' + err.message); }
+}
+function closeOtpModal() {
+    document.getElementById('otpModal').classList.remove('active');
+    document.getElementById('userInfoSection').style.display = 'none';
+    selectedAdmin = null;
+}
+
+// ── GLOBAL EVENTS ──
+window.onclick = (e) => { if (!e.target.closest('#ctxMenu')) hideCtxMenu(); };
+window.onload  = () => {
+    document.getElementById('datePicker').value = new Date().toISOString().split('T')[0];
+    loadDate();
+};
 </script>
 </body>
 </html>
