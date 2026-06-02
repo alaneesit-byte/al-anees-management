@@ -190,7 +190,11 @@
     const DIRECT_IDS  = ["riyas@alaneesqatar.qa","alaneesit@gmail.com","itadministrator@alaneesgroup.com","financemanager@alaneesgroup.com","muhsinpc@alaneesgroup.com","hashim@alaneesgroup.com","hisham@alaneesgroup.com","hameem@alaneesgroup.com","hr@alaneesgroup.com","muhsinvp@alaneesgroup.com"];
     const DAY_NAMES   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
-    const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.co','sb_publishable_zR1fAyjSofxeXbnDx6d0AA_gGQY9eL8');
+   // Use these exact values for the qhrnqbdljapnvnidnxwt project
+const SUPABASE_URL = 'https://qhrnqbdljapnvnidnxwt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFocm5xYmRsamFwbnZuaWRueHd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTE3ODQsImV4cCI6MjA5MTg4Nzc4NH0.AH_46AjKAPXdQ2soG5b987Dqzmf3VIisOWPPAV5bqKw';
+
+const _supabase = supabase.createClient('https://qhrnqbdljapnvnidnxwt.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFocm5xYmRsamFwbnZuaWRueHd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzMTE3ODQsImV4cCI6MjA5MTg4Nzc4NH0.AH_46AjKAPXdQ2soG5b987Dqzmf3VIisOWPPAV5bqKw');
     emailjs.init("qaqwTAi97iG0bBoe3");
 
     let sel = null, activeUser = null, windowTask = null, selectedAdmin = null;
@@ -351,56 +355,85 @@
     }
 
     async function confirmBooking() {
-        const dateValue      = document.getElementById('datePicker').value;
-        const extendValue    = document.getElementById('extendDate').value;
-        const startTime      = TIME_SLOTS[sel.startIndex];
-        const endTime        = document.getElementById('endSlotSelect').value;
-        const agendaValue    = document.getElementById('inputAgenda').value;
-        const notesValue     = document.getElementById('inputNotes').value;
-        const emailRecipient = document.getElementById('inputCC').value;
-        const nameOfBooker   = document.getElementById('inputName').value;
-        const roomSelection  = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
+    const dateValue      = document.getElementById('datePicker').value;
+    const extendValue    = document.getElementById('extendDate').value;
+    const startTime      = TIME_SLOTS[sel.startIndex];
+    const endTime        = document.getElementById('endSlotSelect').value;
+    const agendaValue    = document.getElementById('inputAgenda').value;
+    const notesValue     = document.getElementById('inputNotes').value;
+    const emailRecipient = document.getElementById('inputCC').value;
+    const nameOfBooker   = document.getElementById('inputName').value;
+    const roomSelection  = sel.roomIdx === 0 ? "Meeting Room (Big)" : "Meeting Room (Small)";
 
-        if (!endTime || !agendaValue || !nameOfBooker) { alert("Please fill Name, Agenda, and Duration."); return; }
-
-        const outlookUrl = "https://outlook.office.com/calendar/0/deeplink/compose" +
-            "?subject=" + encodeURIComponent(agendaValue) +
-            "&body="    + encodeURIComponent(notesValue) +
-            "&startdt=" + dateValue + "T" + formatTimeForOutlook(startTime) +
-            "&enddt="   + extendValue + "T" + formatTimeForOutlook(endTime) +
-            "&location="+ encodeURIComponent(roomSelection) +
-            "&to="      + encodeURIComponent(emailRecipient);
-
-        const fullScheduleDetail = (dateValue === extendValue ? dateValue : dateValue + " to " + extendValue) + " (" + startTime + " - " + endTime + ")";
-        const endIndex = TIME_SLOTS.indexOf(endTime);
-        let finalRows = [];
-        for (let d = new Date(dateValue); d <= new Date(extendValue); d.setDate(d.getDate() + 1)) {
-            const dStr = d.toISOString().split('T')[0];
-            for (let k = sel.startIndex; k < endIndex; k++) {
-                finalRows.push({ booked_by: nameOfBooker, agenda: agendaValue, email: emailRecipient, notes: notesValue, room_name: roomSelection, date: dStr, time_slot: TIME_SLOTS[k] + " - " + TIME_SLOTS[k+1] });
-            }
-        }
-
-        try {
-            if (sel.id) await _supabase.from('meetings').delete().eq('id', sel.id);
-            const { error: insertError } = await _supabase.from('meetings').insert(finalRows);
-            if (insertError) throw insertError;
-            await emailjs.send("service_pt04i2n","template_c6wumre",{ to_email: emailRecipient, outlook_link: outlookUrl, room_name: roomSelection, time_slot: startTime + " - " + endTime, meeting_date: dateValue, agenda: agendaValue, meeting_notes: notesValue, batch_schedule: fullScheduleDetail });
-
-            const popup = document.createElement('div');
-            popup.style = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:30px;border-radius:20px;box-shadow:0 20px 50px rgba(0,0,0,0.3);z-index:9999;text-align:center;width:320px;font-family:Inter,sans-serif;";
-            popup.innerHTML = `
-                <div style="font-size:36px;margin-bottom:10px;">✅</div>
-                <h3 style="margin:0 0 6px;color:#1a3a5a;font-size:18px;">Meeting Saved!</h3>
-                <p style="color:#888;font-size:12px;margin-bottom:24px;">Notification sent to <strong>${emailRecipient}</strong>.<br>Add this meeting to your calendar:</p>
-                <button id="btnOutlook" style="width:100%;padding:14px;background:#0078d4;color:white;border:none;border-radius:10px;font-weight:800;cursor:pointer;margin-bottom:18px;font-size:13px;">📅 Sync to Outlook</button>
-                <br><button id="btnSkip" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:12px;">Skip</button>
-            `;
-            document.body.appendChild(popup);
-            document.getElementById('btnOutlook').onclick = () => { window.open(outlookUrl,'_blank'); popup.remove(); closeModals(); loadDate(); };
-            document.getElementById('btnSkip').onclick    = () => { popup.remove(); closeModals(); loadDate(); };
-        } catch(err) { alert("Error: " + err.message); }
+    if (!endTime || !agendaValue || !nameOfBooker) { 
+        alert("Please fill Name, Agenda, and Duration."); 
+        return; 
     }
+
+    // 1. Generate the Outlook Link
+    const outlookUrl = "https://outlook.office.com/calendar/0/deeplink/compose" +
+        "?subject=" + encodeURIComponent(agendaValue) +
+        "&body="    + encodeURIComponent(notesValue) +
+        "&startdt=" + dateValue + "T" + formatTimeForOutlook(startTime) +
+        "&enddt="   + extendValue + "T" + formatTimeForOutlook(endTime) +
+        "&location="+ encodeURIComponent(roomSelection) +
+        "&to="      + encodeURIComponent(emailRecipient);
+
+    // 2. Prepare Database Rows
+    const endIndex = TIME_SLOTS.indexOf(endTime);
+    let finalRows = [];
+    let dStart = new Date(dateValue);
+    let dEnd = new Date(extendValue);
+
+    for (let d = new Date(dStart); d <= dEnd; d.setDate(d.getDate() + 1)) {
+        const dStr = d.toISOString().split('T')[0];
+        for (let k = sel.startIndex; k < endIndex; k++) {
+            finalRows.push({ 
+                booked_by: nameOfBooker, agenda: agendaValue, email: emailRecipient, 
+                notes: notesValue, room_name: roomSelection, date: dStr, 
+                time_slot: TIME_SLOTS[k] + " - " + TIME_SLOTS[k+1] 
+            });
+        }
+    }
+
+    try {
+        // Step A: Attempt Database Save
+        if (sel.id) await _supabase.from('meetings').delete().eq('id', sel.id);
+        const { error: dbError } = await _supabase.from('meetings').insert(finalRows);
+        
+        if (dbError) throw new Error("Database Error: " + dbError.message);
+
+        // Step B: Send Email Notification
+        await emailjs.send("service_pt04i2n", "template_c6wumre", { 
+            to_email: emailRecipient, outlook_link: outlookUrl, 
+            room_name: roomSelection, time_slot: startTime + " - " + endTime, 
+            meeting_date: dateValue, agenda: agendaValue 
+        });
+
+        // Step C: Show Success & Sync Button
+        showOutlookPopup(outlookUrl, emailRecipient);
+
+    } catch (err) {
+        console.error("Critical Error:", err);
+        alert("Connection Error: Could not reach the server. Please check your internet or Supabase URL.");
+    }
+}
+
+function showOutlookPopup(url, email) {
+    const popup = document.createElement('div');
+    popup.style = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:30px;border-radius:20px;box-shadow:0 20px 50px rgba(0,0,0,0.3);z-index:9999;text-align:center;width:320px;font-family:sans-serif;";
+    popup.innerHTML = `
+        <div style="font-size:36px;margin-bottom:10px;">✅</div>
+        <h3 style="margin:0 0 6px;color:#1a3a5a;font-size:18px;">Meeting Saved!</h3>
+        <p style="color:#888;font-size:12px;margin-bottom:24px;">Sent to <strong>${email}</strong>.</p>
+        <button id="btnSync" style="width:100%;padding:14px;background:#0078d4;color:white;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">📅 Sync to Outlook</button>
+        <br><button id="btnClose" style="margin-top:15px;background:none;border:none;color:#aaa;cursor:pointer;font-size:12px;">Close</button>
+    `;
+    document.body.appendChild(popup);
+    document.getElementById('btnSync').onclick = () => { window.open(url, '_blank'); finalize(); };
+    document.getElementById('btnClose').onclick = () => { finalize(); };
+    function finalize() { popup.remove(); closeModals(); loadDate(); }
+}
 
     function formatTimeForOutlook(t) {
         let [time, ampm] = t.split(' '); let [h, m] = time.split(':'); let hour = parseInt(h);
