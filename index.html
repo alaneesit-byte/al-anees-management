@@ -4,13 +4,271 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Al Anees - Executive Meeting System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Audiowide&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Audiowide&family=DM+Serif+Display&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+
+        /* ── SPLASH SCREEN ── */
+        #splash {
+            position: fixed; inset: 0; z-index: 99999;
+            background: #0a1e35;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            overflow: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+        #splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+        #splash::before {
+            content: '';
+            position: absolute; inset: 0;
+            background:
+                linear-gradient(135deg, rgba(28,95,168,0.2) 0%, transparent 60%),
+                linear-gradient(225deg, rgba(28,95,168,0.12) 0%, transparent 60%);
+        }
+        #splash::after {
+            content: '';
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(28,95,168,0.07) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(28,95,168,0.07) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+        .splash-inner {
+            position: relative; z-index: 2;
+            display: flex; flex-direction: column;
+            align-items: center;
+            animation: splashFadeIn 0.9s ease forwards;
+        }
+        @keyframes splashFadeIn {
+            from { opacity: 0; transform: translateY(28px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .splash-logo {
+            height: 72px; margin-bottom: 32px;
+            filter: brightness(0) invert(1);
+            animation: splashFadeIn 1s ease 0.2s both;
+        }
+        .splash-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 36px; color: white;
+            letter-spacing: 1px; text-align: center;
+            margin-bottom: 8px;
+            animation: splashFadeIn 0.9s ease 0.4s both;
+        }
+        .splash-divider {
+            width: 0px; height: 2px;
+            background: linear-gradient(90deg, transparent, #1c5fa8, transparent);
+            margin: 16px auto 20px;
+            animation: expandLine 0.7s ease 0.65s forwards;
+        }
+        @keyframes expandLine { to { width: 60px; } }
+        .splash-sub {
+            font-size: 11px; font-weight: 700;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 5px; text-transform: uppercase;
+            text-align: center;
+            animation: splashFadeIn 0.9s ease 0.6s both;
+        }
+        .splash-badge {
+            margin-top: 36px;
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(28,95,168,0.18);
+            border: 1px solid rgba(28,95,168,0.4);
+            border-radius: 30px; padding: 10px 22px;
+            animation: splashFadeIn 0.9s ease 0.8s both;
+        }
+        .splash-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #4aaef5;
+            animation: dotPulse 1.2s ease-in-out infinite;
+        }
+        @keyframes dotPulse {
+            0%,100% { transform: scale(1); opacity:1; }
+            50%      { transform: scale(1.5); opacity:0.5; }
+        }
+        .splash-badge span {
+            font-size: 11px; font-weight: 700;
+            color: rgba(255,255,255,0.65); letter-spacing: 1.5px;
+        }
+        .splash-progress {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+            background: rgba(255,255,255,0.05);
+        }
+        .splash-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #1c5fa8, #4aaef5);
+            width: 0%;
+            animation: progressFill 9.4s linear 0.6s forwards;
+        }
+        @keyframes progressFill { to { width: 100%; } }
+        .corner { position: absolute; width: 55px; height: 55px; z-index: 2; }
+        .c-tl { top:20px; left:20px; border-top:2px solid rgba(28,95,168,0.4); border-left:2px solid rgba(28,95,168,0.4); }
+        .c-tr { top:20px; right:20px; border-top:2px solid rgba(28,95,168,0.4); border-right:2px solid rgba(28,95,168,0.4); }
+        .c-bl { bottom:20px; left:20px; border-bottom:2px solid rgba(28,95,168,0.4); border-left:2px solid rgba(28,95,168,0.4); }
+        .c-br { bottom:20px; right:20px; border-bottom:2px solid rgba(28,95,168,0.4); border-right:2px solid rgba(28,95,168,0.4); }
+
+
+
+
+        /* ══════════════════════════════════════════
+           VISUAL THEME — PROFESSIONAL GLASS UI
+        ══════════════════════════════════════════ */
+
+        /* Animated background canvas */
+        body {
+            background: #c8d8ea !important;
+            overflow-x: hidden;
+        }
+
+        /* Floating orb layer */
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background:
+                radial-gradient(ellipse 900px 700px at -5% -10%,  rgba(28,95,168,0.28) 0%, transparent 60%),
+                radial-gradient(ellipse 700px 600px at 105% 110%, rgba(28,95,168,0.22) 0%, transparent 60%),
+                radial-gradient(ellipse 500px 400px at 50%  -5%,  rgba(100,160,220,0.15) 0%, transparent 55%),
+                radial-gradient(ellipse 400px 300px at 80%  50%,  rgba(111,66,193,0.08) 0%, transparent 55%);
+            animation: orbDrift 12s ease-in-out infinite alternate;
+        }
+        @keyframes orbDrift {
+            0%   { transform: scale(1)   translateY(0px); }
+            100% { transform: scale(1.04) translateY(-18px); }
+        }
+
+        /* Animated floating particles */
+        body::after {
+            content: '';
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image:
+                radial-gradient(circle 2px at 15%  25%, rgba(28,95,168,0.35) 0%, transparent 100%),
+                radial-gradient(circle 1.5px at 35% 60%, rgba(28,95,168,0.25) 0%, transparent 100%),
+                radial-gradient(circle 2px at 60%  20%, rgba(28,95,168,0.30) 0%, transparent 100%),
+                radial-gradient(circle 1px at 75%  70%, rgba(111,66,193,0.25) 0%, transparent 100%),
+                radial-gradient(circle 2px at 90%  35%, rgba(28,95,168,0.20) 0%, transparent 100%),
+                radial-gradient(circle 1.5px at 50% 85%, rgba(28,95,168,0.25) 0%, transparent 100%);
+            animation: particleDrift 18s linear infinite alternate;
+        }
+        @keyframes particleDrift {
+            0%   { transform: translateY(0px)   translateX(0px); }
+            100% { transform: translateY(-30px) translateX(10px); }
+        }
+
+        .container { position: relative; z-index: 1; }
+
+        /* ── PREMIUM GLASS HEADER ── */
+        .header {
+            background: rgba(255,255,255,0.52) !important;
+            backdrop-filter: blur(32px) saturate(220%) brightness(108%) !important;
+            -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(108%) !important;
+            border: 1px solid rgba(255,255,255,0.80) !important;
+            box-shadow:
+                0 8px 40px rgba(28,95,168,0.13),
+                0 2px 0  rgba(255,255,255,1.0) inset,
+                0 -1px 0 rgba(28,95,168,0.07) inset !important;
+            position: relative;
+            overflow: hidden;
+        }
+        /* shimmer streak on header */
+        .header::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 60%; height: 100%;
+            background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.35) 50%, transparent 60%);
+            animation: shimmer 6s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes shimmer {
+            0%   { left: -100%; }
+            50%  { left: 130%; }
+            100% { left: 130%; }
+        }
+
+        /* ── PREMIUM GLASS SPREADSHEET ── */
+        .spreadsheet {
+            background: rgba(255,255,255,0.38) !important;
+            backdrop-filter: blur(28px) saturate(200%) brightness(106%) !important;
+            -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(106%) !important;
+            border: 1px solid rgba(255,255,255,0.65) !important;
+            box-shadow:
+                0 24px 80px rgba(28,95,168,0.15),
+                0 4px 0  rgba(255,255,255,0.90) inset,
+                0 -2px 0 rgba(28,95,168,0.06) inset,
+                4px 0  0 rgba(255,255,255,0.40) inset !important;
+        }
+
+        /* Table col header */
+        th {
+            background: linear-gradient(180deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.20) 100%) !important;
+            color: #0d2540 !important;
+            border-bottom: 1px solid rgba(255,255,255,0.55) !important;
+            font-size: 11px !important;
+            letter-spacing: 1.2px !important;
+            text-transform: uppercase !important;
+            font-weight: 800 !important;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+        }
+
+        /* cells */
+        td { border-color: rgba(180,205,230,0.30) !important; }
+
+        /* Time column */
+        td:first-child {
+            background: rgba(255,255,255,0.18) !important;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.6);
+        }
+
+        /* Available slot — elegant ghost */
+        .available {
+            background: rgba(255,255,255,0.12) !important;
+            border: 1.5px dashed rgba(28,95,168,0.22) !important;
+            border-radius: 10px;
+            color: rgba(28,60,100,0.35) !important;
+            transition: all 0.22s ease !important;
+        }
+        .available:hover {
+            background: rgba(28,95,168,0.10) !important;
+            border-color: rgba(28,95,168,0.50) !important;
+            color: #1c5fa8 !important;
+            box-shadow: 0 4px 20px rgba(28,95,168,0.12), inset 0 1px 0 rgba(255,255,255,0.5) !important;
+            transform: scale(0.985);
+        }
+
+        /* Booked slot — premium card */
+        .booked {
+            background: rgba(255,255,255,0.72) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border-left: 4px solid #1c5fa8 !important;
+            box-shadow:
+                0 4px 20px rgba(28,95,168,0.12),
+                0 1px 0 rgba(255,255,255,0.9) inset !important;
+            transition: all 0.2s ease !important;
+        }
+        .booked:hover { transform: scale(1.01); box-shadow: 0 8px 28px rgba(28,95,168,0.18), 0 1px 0 rgba(255,255,255,0.9) inset !important; }
+
+        /* Permanent slot */
+        .permanent {
+            background: rgba(243,232,255,0.72) !important;
+            border-left-color: #6f42c1 !important;
+            box-shadow: 0 4px 20px rgba(111,66,193,0.12), 0 1px 0 rgba(255,255,255,0.9) inset !important;
+        }
+
+        /* Context menu glass */
+        #context-menu {
+            background: rgba(255,255,255,0.75) !important;
+            backdrop-filter: blur(20px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+            border: 1px solid rgba(255,255,255,0.85) !important;
+            box-shadow: 0 16px 48px rgba(28,95,168,0.18) !important;
+        }
+
+
         #context-menu { pointer-events: auto; }
         :root { --primary-navy: #1a3a5a; --booked-blue: #007bff; --al-anees-blue: #1c5fa8; --perma-purple: #6f42c1; }
-        body { font-family: 'Inter', sans-serif; margin: 0; background: #f4f7f9; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        body { font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
         .container { width: 100%; max-width: 1400px; padding: 20px; }
         .header { background: white; padding: 15px 30px; border-radius: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .brand-logo { height: 60px; }
@@ -71,6 +329,26 @@
     </style>
 </head>
 <body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+    <div class="corner c-tl"></div>
+    <div class="corner c-tr"></div>
+    <div class="corner c-bl"></div>
+    <div class="corner c-br"></div>
+    <div class="splash-inner">
+        <img src="alaneesqatar_cover.jpg" class="splash-logo" alt="Al Anees" onerror="this.style.display='none'">
+        <div class="splash-title">Meeting Management</div>
+        <div class="splash-divider"></div>
+        <div class="splash-sub">Executive Scheduling System</div>
+        <div class="splash-badge">
+            <div class="splash-dot"></div>
+            <span>AL ANEES GROUP · SINCE 1992</span>
+        </div>
+    </div>
+    <div class="splash-progress"><div class="splash-progress-bar"></div></div>
+</div>
+
 
 <!-- PIN DAY SELECTOR MODAL -->
 <div id="pinModal">
@@ -475,6 +753,13 @@ function showOutlookPopup(url, email) {
     function hideMenu() { document.getElementById('context-menu').style.display = 'none'; }
     function closeModals() { document.getElementById('bookingModal').style.display = 'none'; document.getElementById('authChoiceModal').style.display = 'none'; }
     function changeDate(n) { let d = new Date(document.getElementById('datePicker').value); d.setDate(d.getDate()+n); document.getElementById('datePicker').value = d.toISOString().split('T')[0]; loadDate(); }
+
+    // ── SPLASH DISMISS ──
+    setTimeout(() => {
+        document.getElementById('splash').classList.add('hide');
+        setTimeout(() => document.getElementById('splash').remove(), 900);
+    }, 10000);
+
     window.onload = () => { document.getElementById('datePicker').value = new Date().toISOString().split('T')[0]; loadDate(); };
     window.onclick = (e) => { if (!e.target.closest('#context-menu')) hideMenu(); };
 </script>
