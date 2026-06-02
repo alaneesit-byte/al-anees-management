@@ -191,10 +191,10 @@
     const DAY_NAMES   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
    // Use these exact values for the qhrnqbdljapnvnidnxwt project
-const SUPABASE_URL = 'https://msfmqqtlxzuudrsypdak.supabase.co/rest/v1/';
+const SUPABASE_URL = 'https://msfmqqtlxzuudrsypdak.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zZm1xcXRseHp1dWRyc3lwZGFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzAxNTUsImV4cCI6MjA5MDcwNjE1NX0.VYb1A2i3Uo-nqD3yljMWD5WDLfHSH1CTZY-JWF3NN4A';
 
-const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.co/rest/v1/','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zZm1xcXRseHp1dWRyc3lwZGFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzAxNTUsImV4cCI6MjA5MDcwNjE1NX0.VYb1A2i3Uo-nqD3yljMWD5WDLfHSH1CTZY-JWF3NN4A');
+const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zZm1xcXRseHp1dWRyc3lwZGFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzAxNTUsImV4cCI6MjA5MDcwNjE1NX0.VYb1A2i3Uo-nqD3yljMWD5WDLfHSH1CTZY-JWF3NN4A');
     emailjs.init("qaqwTAi97iG0bBoe3");
 
     let sel = null, activeUser = null, windowTask = null, selectedAdmin = null;
@@ -254,10 +254,10 @@ const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.c
                 let d = new Date(startDate);
                 d.setDate(d.getDate() + i);
                 if (selectedDays.includes(d.getDay())) {
-                    futureRows.push({ booked_by: sel.booked_by, agenda: sel.agenda, email: sel.email, notes: sel.notes, room_name: sel.room_name, date: d.toISOString().split('T')[0], time_slot: sel.time_slot, is_permanent: true });
+                    futureRows.push({ booked_by: sel.booked_by, agenda: sel.agenda, email: sel.email, notes: sel.notes, room_name: sel.room_name, day_name: d.toISOString().split('T')[0], time_slot: sel.time_slot, is_permanent: true });
                 }
             }
-            const { error } = await _supabase.from('meetings').upsert(futureRows, { onConflict: 'date,time_slot,room_name' });
+            const { error } = await _supabase.from('meetings').upsert(futureRows, { onConflict: 'day_name,time_slot,room_name' });
             if (error) throw error;
             const dayLabels = selectedDays.length === 7 ? 'All Days' : selectedDays.map(d => DAY_NAMES[d]).join(', ');
             alert(`✅ Pinned as Permanent!\nDays: ${dayLabels}`);
@@ -308,7 +308,7 @@ const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.c
     // ── CORE APP LOGIC ──
     async function loadDate() {
         const dateInput = document.getElementById('datePicker').value;
-        const { data: meetings } = await _supabase.from('meetings').select('*').eq('date', dateInput);
+        const { data: meetings } = await _supabase.from('meetings').select('*').eq('day_name', dateInput);
         const grid = document.getElementById('gridBody');
         grid.innerHTML = '';
         for (let i = 0; i < TIME_SLOTS.length - 1; i++) {
@@ -328,8 +328,8 @@ const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.c
                 } else {
                     slot.className = "slot available";
                     slot.innerText = "Available Slot";
-                    slot.onclick = () => { sel = { date: dateInput, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r }; runSecure(() => openModal(false)); };
-                    td.oncontextmenu = (e) => { e.preventDefault(); sel = { date: dateInput, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r }; runSecure(() => openModal(false)); };
+                    slot.onclick = () => { sel = { day_name: dateInput, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r }; runSecure(() => openModal(false)); };
+                    td.oncontextmenu = (e) => { e.preventDefault(); sel = { day_name: dateInput, startTime: TIME_SLOTS[i], startIndex: i, roomIdx: r }; runSecure(() => openModal(false)); };
                 }
                 td.appendChild(slot); tr.appendChild(td);
             }
@@ -342,7 +342,7 @@ const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.c
         document.getElementById('inputAgenda').value = isEdit ? (sel.agenda    || "") : "";
         document.getElementById('inputCC').value     = isEdit ? (sel.email     || "") : "";
         document.getElementById('inputNotes').value  = isEdit ? (sel.notes     || "") : "";
-        document.getElementById('extendDate').value  = sel.date;
+        document.getElementById('extendDate').value  = sel.day_name;
         const endSelect = document.getElementById('endSlotSelect');
         endSelect.innerHTML = '';
         for (let j = sel.startIndex + 1; j < TIME_SLOTS.length; j++) {
@@ -390,7 +390,7 @@ const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.c
         for (let k = sel.startIndex; k < endIndex; k++) {
             finalRows.push({ 
                 booked_by: nameOfBooker, agenda: agendaValue, email: emailRecipient, 
-                notes: notesValue, room_name: roomSelection, date: dStr, 
+                notes: notesValue, room_name: roomSelection, day_name: dStr, 
                 time_slot: TIME_SLOTS[k] + " - " + TIME_SLOTS[k+1] 
             });
         }
@@ -462,7 +462,7 @@ function showOutlookPopup(url, email) {
         try {
             const { error: deleteError } = await _supabase.from('meetings').delete()
                 .eq('time_slot', sel.time_slot).eq('room_name', sel.room_name)
-                .eq('booked_by', sel.booked_by).eq('is_permanent', true).gt('date', todayStr);
+                .eq('booked_by', sel.booked_by).eq('is_permanent', true).gt('day_name', todayStr);
             if (deleteError) throw deleteError;
             await _supabase.from('meetings').update({ is_permanent: false }).eq('id', sel.id);
             alert("Unpinned: All future replications deleted.");
