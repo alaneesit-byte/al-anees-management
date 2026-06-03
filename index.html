@@ -694,7 +694,7 @@ const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.c
 
         // Step B: Send Email Notification
         await emailjs.send("service_pt04i2n", "template_c6wumre", { 
-            to_email: emailRecipient, outlook_link: outlookUrl, 
+            to_email: emailRecipient, outlook_link: outlookUrl, zoho_link: zohoUrl,
             room_name: roomSelection, time_slot: startTime + " - " + endTime, 
             meeting_date: dateValue, agenda: agendaValue 
         });
