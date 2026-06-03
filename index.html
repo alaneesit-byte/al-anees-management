@@ -712,8 +712,11 @@ const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.c
         if (dbError) throw new Error("Database Error: " + dbError.message);
 
         // Step B: Send Email Notification
+        const icsData = makeICS();
+        const icsDataUri = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(icsData);
         await emailjs.send("service_pt04i2n", "template_c6wumre", { 
-            to_email: emailRecipient, outlook_link: outlookUrl, zoho_link: zohoUrl,
+            to_email: emailRecipient, outlook_link: outlookUrl,
+            ics_link: icsDataUri,
             room_name: roomSelection, time_slot: startTime + " - " + endTime, 
             meeting_date: dateValue, agenda: agendaValue 
         });
