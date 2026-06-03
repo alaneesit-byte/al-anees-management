@@ -657,6 +657,17 @@ const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.c
         "&location="+ encodeURIComponent(roomSelection) +
         "&to="      + encodeURIComponent(emailRecipient);
 
+    // 1b. Zoho Calendar Link
+    const zohoStart = dateValue.replace(/-/g,'') + 'T' + formatTimeForOutlook(startTime).replace(/:/g,'') + 'Z';
+    const zohoEnd   = extendValue.replace(/-/g,'') + 'T' + formatTimeForOutlook(endTime).replace(/:/g,'') + 'Z';
+    const zohoUrl = "https://calendar.zoho.com/api/v1/eventedit" +
+        "?title=" + encodeURIComponent(agendaValue) +
+        "&desc="  + encodeURIComponent(notesValue || '') +
+        "&loc="   + encodeURIComponent(roomSelection) +
+        "&st="    + zohoStart +
+        "&et="    + zohoEnd +
+        "&inv="   + encodeURIComponent(emailRecipient);
+
     // 2. Prepare Database Rows
     const endIndex = TIME_SLOTS.indexOf(endTime);
     let finalRows = [];
@@ -689,7 +700,7 @@ const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.c
         });
 
         // Step C: Show Success & Sync Button
-        showOutlookPopup(outlookUrl, emailRecipient);
+        showOutlookPopup(outlookUrl, zohoUrl, emailRecipient);
 
     } catch (err) {
         console.error("Critical Error:", err);
@@ -697,19 +708,38 @@ const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.c
     }
 }
 
-function showOutlookPopup(url, email) {
+function showOutlookPopup(url, zohoUrl, email) {
     const popup = document.createElement('div');
-    popup.style = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:30px;border-radius:20px;box-shadow:0 20px 50px rgba(0,0,0,0.3);z-index:9999;text-align:center;width:320px;font-family:sans-serif;";
+    popup.style = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:32px 28px;border-radius:22px;box-shadow:0 24px 60px rgba(0,0,0,0.18);z-index:9999;text-align:center;width:340px;font-family:'Inter',sans-serif;border:1px solid rgba(0,0,0,0.06);";
     popup.innerHTML = `
-        <div style="font-size:36px;margin-bottom:10px;">✅</div>
-        <h3 style="margin:0 0 6px;color:#1a3a5a;font-size:18px;">Meeting Saved!</h3>
-        <p style="color:#888;font-size:12px;margin-bottom:24px;">Sent to <strong>${email}</strong>.</p>
-        <button id="btnSync" style="width:100%;padding:14px;background:#0078d4;color:white;border:none;border-radius:10px;font-weight:bold;cursor:pointer;">📅 Sync to Outlook</button>
-        <br><button id="btnClose" style="margin-top:15px;background:none;border:none;color:#aaa;cursor:pointer;font-size:12px;">Close</button>
+        <div style="font-size:42px;margin-bottom:10px;">✅</div>
+        <h3 style="margin:0 0 5px;color:#0d2540;font-size:18px;font-weight:800;">Meeting Saved!</h3>
+        <p style="color:#999;font-size:12px;margin-bottom:24px;">Notification sent to <strong style="color:#0d2540">${email}</strong></p>
+
+        <p style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;">Sync to Calendar</p>
+
+        <button id="btnOutlook" style="width:100%;padding:13px;background:#0078d4;color:white;border:none;border-radius:11px;font-weight:700;cursor:pointer;font-size:13px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M19 3H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+            Sync to Outlook
+        </button>
+
+        <button id="btnZoho" style="width:100%;padding:13px;background:#e8460a;color:white;border:none;border-radius:11px;font-weight:700;cursor:pointer;font-size:13px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            Sync to Zoho Calendar
+        </button>
+
+        <button id="btnClose" style="background:none;border:none;color:#bbb;cursor:pointer;font-size:12px;font-family:inherit;">Close without syncing</button>
     `;
     document.body.appendChild(popup);
-    document.getElementById('btnSync').onclick = () => { window.open(url, '_blank'); finalize(); };
-    document.getElementById('btnClose').onclick = () => { finalize(); };
+    document.getElementById('btnOutlook').onclick = () => { window.open(url, '_blank'); };
+    document.getElementById('btnZoho').onclick    = () => { window.open(zohoUrl, '_blank'); };
+    document.getElementById('btnClose').onclick   = () => { finalize(); };
+    // clicking outside closes
+    setTimeout(() => {
+        document.addEventListener('click', function handler(e) {
+            if (!popup.contains(e.target)) { finalize(); document.removeEventListener('click', handler); }
+        });
+    }, 200);
     function finalize() { popup.remove(); closeModals(); loadDate(); }
 }
 
