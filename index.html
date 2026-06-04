@@ -659,32 +659,27 @@ const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.c
 
     // 1b. ICS — works with Outlook app, Zoho Calendar app, any calendar
     function makeICS() {
-        const pad = n => String(n).padStart(2,'0');
-        const fmt = (dateStr, timeStr) => {
-            const [y,mo,d] = dateStr.split('-');
-            const t24 = formatTimeForOutlook(timeStr).split(':');
-            return y+mo+d+'T'+t24[0]+t24[1]+t24[2];
+        var fmt = function(ds, ts) {
+            var p = ds.split('-'); var t = formatTimeForOutlook(ts).split(':');
+            return p[0]+p[1]+p[2]+'T'+t[0]+t[1]+t[2];
         };
-        const lines = [
-            'BEGIN:VCALENDAR',
-            'VERSION:2.0',
-            'PRODID:-//Al Anees Meeting System//EN',
-            'METHOD:PUBLISH',
-            'BEGIN:VEVENT',
-            'UID:' + Date.now() + '@alaneesgroup.com',
-            'DTSTAMP:' + fmt(dateValue, startTime) + 'Z',
-            'DTSTART:' + fmt(dateValue, startTime),
-            'DTEND:'   + fmt(extendValue, endTime),
-            'SUMMARY:' + agendaValue,
-            'DESCRIPTION:' + (notesValue||'').split('
-').join('\n'),
-            'LOCATION:' + roomSelection,
-            'STATUS:CONFIRMED',
-            'END:VEVENT',
-            'END:VCALENDAR'
-        ];
-        return lines.join('
-');
+        var CRLF = String.fromCharCode(13,10);
+        var d = (notesValue||'').replace(/\n/g,'\\n');
+        return 'BEGIN:VCALENDAR'+CRLF
+            +'VERSION:2.0'+CRLF
+            +'PRODID:-//Al Anees//EN'+CRLF
+            +'METHOD:PUBLISH'+CRLF
+            +'BEGIN:VEVENT'+CRLF
+            +'UID:'+Date.now()+'@alaneesgroup.com'+CRLF
+            +'DTSTAMP:'+fmt(dateValue,startTime)+'Z'+CRLF
+            +'DTSTART:'+fmt(dateValue,startTime)+CRLF
+            +'DTEND:'+fmt(extendValue,endTime)+CRLF
+            +'SUMMARY:'+agendaValue+CRLF
+            +'DESCRIPTION:'+d+CRLF
+            +'LOCATION:'+roomSelection+CRLF
+            +'STATUS:CONFIRMED'+CRLF
+            +'END:VEVENT'+CRLF
+            +'END:VCALENDAR';
     }
 
     // 2. Prepare Database Rows
