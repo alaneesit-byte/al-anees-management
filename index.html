@@ -707,11 +707,14 @@ const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.c
         if (dbError) throw new Error("Database Error: " + dbError.message);
 
         // Step B: Send Email Notification
-        const icsData = makeICS();
-        const icsDataUri = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(icsData);
+        const icsWebLink = 'https://alaneesit-byte.github.io/al-anees-management/?ics=1'
+            + '&agenda=' + encodeURIComponent(agendaValue)
+            + '&date='   + encodeURIComponent(dateValue)
+            + '&time='   + encodeURIComponent(startTime + ' - ' + endTime)
+            + '&room='   + encodeURIComponent(roomSelection);
         await emailjs.send("service_pt04i2n", "template_c6wumre", { 
             to_email: emailRecipient, outlook_link: outlookUrl,
-            ics_link: icsDataUri,
+            ics_link: icsWebLink,
             room_name: roomSelection, time_slot: startTime + " - " + endTime, 
             meeting_date: dateValue, agenda: agendaValue 
         });
@@ -813,7 +816,69 @@ function showOutlookPopup(url, makeICS, email) {
         setTimeout(() => document.getElementById('splash').remove(), 900);
     }, 10000);
 
-    window.onload = () => { document.getElementById('datePicker').value = new Date().toISOString().split('T')[0]; loadDate(); };
+    window.onload = () => {
+        // Check if opened from email ICS link
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('ics') === '1') {
+            const agenda  = decodeURIComponent(params.get('agenda')  || 'Meeting');
+            const date    = decodeURIComponent(params.get('date')    || '');
+            const time    = decodeURIComponent(params.get('time')    || '');
+            const room    = decodeURIComponent(params.get('room')    || '');
+
+            // Parse time slot e.g. "08:00 AM - 08:30 AM"
+            var parts = time.split(' - ');
+            var startT = parts[0] ? parts[0].trim() : '08:00 AM';
+            var endT   = parts[1] ? parts[1].trim() : '08:30 AM';
+
+            function fmtICS(ds, ts) {
+                var ampm = ts.split(' ')[1];
+                var hm   = ts.split(' ')[0].split(':');
+                var h    = parseInt(hm[0]);
+                var m    = hm[1];
+                if (ampm === 'PM' && h !== 12) h += 12;
+                if (ampm === 'AM' && h === 12) h = 0;
+                var p    = ds.split('-');
+                return p[0]+p[1]+p[2]+'T'+String(h).padStart(2,'0')+m+'00';
+            }
+
+            var CRLF = String.fromCharCode(13,10);
+            var ics = 'BEGIN:VCALENDAR'+CRLF
+                +'VERSION:2.0'+CRLF
+                +'PRODID:-//Al Anees//EN'+CRLF
+                +'METHOD:PUBLISH'+CRLF
+                +'BEGIN:VEVENT'+CRLF
+                +'UID:'+Date.now()+'@alaneesgroup.com'+CRLF
+                +'DTSTAMP:'+fmtICS(date,startT)+'Z'+CRLF
+                +'DTSTART:'+fmtICS(date,startT)+CRLF
+                +'DTEND:'+fmtICS(date,endT)+CRLF
+                +'SUMMARY:'+agenda+CRLF
+                +'LOCATION:'+room+CRLF
+                +'STATUS:CONFIRMED'+CRLF
+                +'END:VEVENT'+CRLF
+                +'END:VCALENDAR';
+
+            var blob = new Blob([ics], {type:'text/calendar;charset=utf-8'});
+            var a    = document.createElement('a');
+            a.href   = URL.createObjectURL(blob);
+            a.download = 'meeting.ics';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // Show a toast message
+            var toast = document.createElement('div');
+            toast.innerHTML = '📥 Calendar file downloaded! Double-click it to add to Zoho / Outlook.';
+            toast.style = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#0d2540;color:white;padding:16px 28px;border-radius:14px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,0.25);text-align:center;max-width:380px;';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+
+            // Set date picker to meeting date
+            if (date) document.getElementById('datePicker').value = date;
+        } else {
+            document.getElementById('datePicker').value = new Date().toISOString().split('T')[0];
+        }
+        loadDate();
+    };
     window.onclick = (e) => { if (!e.target.closest('#context-menu')) hideMenu(); };
 </script>
 </body>
