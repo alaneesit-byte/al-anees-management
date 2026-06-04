@@ -857,20 +857,36 @@ function showOutlookPopup(url, makeICS, email) {
                 +'END:VEVENT'+CRLF
                 +'END:VCALENDAR';
 
-            var blob = new Blob([ics], {type:'text/calendar;charset=utf-8'});
-            var a    = document.createElement('a');
-            a.href   = URL.createObjectURL(blob);
-            a.download = 'meeting.ics';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            // Build ICS blob URL
+            var blob    = new Blob([ics], {type:'text/calendar;charset=utf-8'});
+            var blobUrl = URL.createObjectURL(blob);
 
-            // Show a toast message
-            var toast = document.createElement('div');
-            toast.innerHTML = '📥 Calendar file downloaded! Double-click it to add to Zoho / Outlook.';
-            toast.style = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#0d2540;color:white;padding:16px 28px;border-radius:14px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,0.25);text-align:center;max-width:380px;';
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 5000);
+            // Build Google Calendar link (universal fallback)
+            var gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+                + '&text='     + encodeURIComponent(agenda)
+                + '&dates='    + fmtICS(date,startT) + '/' + fmtICS(date,endT)
+                + '&location=' + encodeURIComponent(room)
+                + '&details='  + encodeURIComponent('Meeting Room: ' + room);
+
+            // Show a full-screen popup with all options
+            var popup = document.createElement('div');
+            popup.style = 'position:fixed;inset:0;background:rgba(10,20,40,0.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;';
+            popup.innerHTML = '<div style="background:white;border-radius:22px;padding:36px 32px;max-width:400px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,0.3);text-align:center;">'
+                + '<div style="font-size:40px;margin-bottom:12px;">📅</div>'
+                + '<h2 style="margin:0 0 6px;font-size:20px;color:#0d2540;font-family:sans-serif;">Add to Your Calendar</h2>'
+                + '<p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#0d2540;font-family:sans-serif;">' + agenda + '</p>'
+                + '<p style="margin:0 0 24px;font-size:12px;color:#aaa;font-family:sans-serif;">' + date + ' &nbsp;|&nbsp; ' + time + ' &nbsp;|&nbsp; ' + room + '</p>'
+
+                + '<a href="' + blobUrl + '" download="meeting.ics" style="display:block;background:#e8460a;color:white;text-decoration:none;padding:14px;border-radius:11px;font-weight:700;font-size:13px;margin-bottom:10px;font-family:sans-serif;">📥 Download .ics &nbsp;(Zoho / Outlook App)</a>'
+
+                + '<p style="margin:0 0 10px;font-size:11px;color:#aaa;font-family:sans-serif;">After downloading, double-click the file to open in Zoho Calendar or Outlook</p>'
+
+                + '<div style="border-top:1px solid #eef2f7;margin:16px 0;"></div>'
+
+                + '<a href="' + gcalUrl + '" target="_blank" style="display:block;background:#4285f4;color:white;text-decoration:none;padding:14px;border-radius:11px;font-weight:700;font-size:13px;margin-bottom:10px;font-family:sans-serif;">📅 Add to Google Calendar</a>' + '<button id="icsCloseBtn" style="background:none;border:none;color:#bbb;cursor:pointer;font-size:12px;font-family:sans-serif;margin-top:8px;">Close</button>'
+                + '</div>';
+            document.body.appendChild(popup);
+            document.getElementById('icsCloseBtn').onclick = function() { popup.remove(); };
 
             // Set date picker to meeting date
             if (date) document.getElementById('datePicker').value = date;
