@@ -707,16 +707,13 @@ const _supabase = supabase.createClient('https://msfmqqtlxzuudrsypdak.supabase.c
         if (dbError) throw new Error("Database Error: " + dbError.message);
 
         // Step B: Send Email Notification
-        const icsWebLink = 'https://alaneesit-byte.github.io/al-anees-management/?ics=1'
-            + '&agenda=' + encodeURIComponent(agendaValue)
-            + '&date='   + encodeURIComponent(dateValue)
-            + '&time='   + encodeURIComponent(startTime + ' - ' + endTime)
-            + '&room='   + encodeURIComponent(roomSelection);
         await emailjs.send("service_pt04i2n", "template_c6wumre", { 
-            to_email: emailRecipient, outlook_link: outlookUrl,
-            ics_link: icsWebLink,
-            room_name: roomSelection, time_slot: startTime + " - " + endTime, 
-            meeting_date: dateValue, agenda: agendaValue 
+            to_email: emailRecipient,
+            outlook_link: outlookUrl,
+            room_name: roomSelection,
+            time_slot: startTime + " - " + endTime, 
+            meeting_date: dateValue,
+            agenda: agendaValue 
         });
 
         // Step C: Show Success & Sync Button
@@ -735,32 +732,16 @@ function showOutlookPopup(url, makeICS, email) {
         <div style="font-size:42px;margin-bottom:10px;">✅</div>
         <h3 style="margin:0 0 5px;color:#0d2540;font-size:18px;font-weight:800;">Meeting Saved!</h3>
         <p style="color:#999;font-size:12px;margin-bottom:24px;">Notification sent to <strong style="color:#0d2540">${email}</strong></p>
-
         <p style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;">Sync to Calendar</p>
-
-        <button id="btnOutlook" style="width:100%;padding:13px;background:#0078d4;color:white;border:none;border-radius:11px;font-weight:700;cursor:pointer;font-size:13px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;">
+        <button id="btnOutlook" style="width:100%;padding:13px;background:#0078d4;color:white;border:none;border-radius:11px;font-weight:700;cursor:pointer;font-size:13px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M19 3H5C3.9 3 3 3.9 3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
             Sync to Outlook
         </button>
-
-        <button id="btnZoho" style="width:100%;padding:13px;background:#e8460a;color:white;border:none;border-radius:11px;font-weight:700;cursor:pointer;font-size:13px;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-            Add to Zoho / Outlook App (.ics)
-        </button>
-
-        <button id="btnClose" style="background:none;border:none;color:#bbb;cursor:pointer;font-size:12px;font-family:inherit;">Close without syncing</button>
+        <button id="btnClose" style="background:none;border:none;color:#bbb;cursor:pointer;font-size:12px;font-family:inherit;">Close</button>
     `;
     document.body.appendChild(popup);
     document.getElementById('btnOutlook').onclick = () => { window.open(url, '_blank'); };
-    document.getElementById('btnZoho').onclick = () => {
-        const blob = new Blob([makeICS()], {type:'text/calendar;charset=utf-8'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'meeting.ics';
-        a.click();
-    };
     document.getElementById('btnClose').onclick   = () => { finalize(); };
-    // clicking outside closes
     setTimeout(() => {
         document.addEventListener('click', function handler(e) {
             if (!popup.contains(e.target)) { finalize(); document.removeEventListener('click', handler); }
@@ -817,82 +798,7 @@ function showOutlookPopup(url, makeICS, email) {
     }, 10000);
 
     window.onload = () => {
-        // Check if opened from email ICS link
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('ics') === '1') {
-            const agenda  = decodeURIComponent(params.get('agenda')  || 'Meeting');
-            const date    = decodeURIComponent(params.get('date')    || '');
-            const time    = decodeURIComponent(params.get('time')    || '');
-            const room    = decodeURIComponent(params.get('room')    || '');
-
-            // Parse time slot e.g. "08:00 AM - 08:30 AM"
-            var parts = time.split(' - ');
-            var startT = parts[0] ? parts[0].trim() : '08:00 AM';
-            var endT   = parts[1] ? parts[1].trim() : '08:30 AM';
-
-            function fmtICS(ds, ts) {
-                var ampm = ts.split(' ')[1];
-                var hm   = ts.split(' ')[0].split(':');
-                var h    = parseInt(hm[0]);
-                var m    = hm[1];
-                if (ampm === 'PM' && h !== 12) h += 12;
-                if (ampm === 'AM' && h === 12) h = 0;
-                var p    = ds.split('-');
-                return p[0]+p[1]+p[2]+'T'+String(h).padStart(2,'0')+m+'00';
-            }
-
-            var CRLF = String.fromCharCode(13,10);
-            var ics = 'BEGIN:VCALENDAR'+CRLF
-                +'VERSION:2.0'+CRLF
-                +'PRODID:-//Al Anees//EN'+CRLF
-                +'METHOD:PUBLISH'+CRLF
-                +'BEGIN:VEVENT'+CRLF
-                +'UID:'+Date.now()+'@alaneesgroup.com'+CRLF
-                +'DTSTAMP:'+fmtICS(date,startT)+'Z'+CRLF
-                +'DTSTART:'+fmtICS(date,startT)+CRLF
-                +'DTEND:'+fmtICS(date,endT)+CRLF
-                +'SUMMARY:'+agenda+CRLF
-                +'LOCATION:'+room+CRLF
-                +'STATUS:CONFIRMED'+CRLF
-                +'END:VEVENT'+CRLF
-                +'END:VCALENDAR';
-
-            // Build ICS blob URL
-            var blob    = new Blob([ics], {type:'text/calendar;charset=utf-8'});
-            var blobUrl = URL.createObjectURL(blob);
-
-            // Build Google Calendar link (universal fallback)
-            var gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
-                + '&text='     + encodeURIComponent(agenda)
-                + '&dates='    + fmtICS(date,startT) + '/' + fmtICS(date,endT)
-                + '&location=' + encodeURIComponent(room)
-                + '&details='  + encodeURIComponent('Meeting Room: ' + room);
-
-            // Show a full-screen popup with all options
-            var popup = document.createElement('div');
-            popup.style = 'position:fixed;inset:0;background:rgba(10,20,40,0.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;';
-            popup.innerHTML = '<div style="background:white;border-radius:22px;padding:36px 32px;max-width:400px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,0.3);text-align:center;">'
-                + '<div style="font-size:40px;margin-bottom:12px;">📅</div>'
-                + '<h2 style="margin:0 0 6px;font-size:20px;color:#0d2540;font-family:sans-serif;">Add to Your Calendar</h2>'
-                + '<p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#0d2540;font-family:sans-serif;">' + agenda + '</p>'
-                + '<p style="margin:0 0 24px;font-size:12px;color:#aaa;font-family:sans-serif;">' + date + ' &nbsp;|&nbsp; ' + time + ' &nbsp;|&nbsp; ' + room + '</p>'
-
-                + '<a href="' + blobUrl + '" download="meeting.ics" style="display:block;background:#e8460a;color:white;text-decoration:none;padding:14px;border-radius:11px;font-weight:700;font-size:13px;margin-bottom:10px;font-family:sans-serif;">📥 Download .ics &nbsp;(Zoho / Outlook App)</a>'
-
-                + '<p style="margin:0 0 10px;font-size:11px;color:#aaa;font-family:sans-serif;">After downloading, double-click the file to open in Zoho Calendar or Outlook</p>'
-
-                + '<div style="border-top:1px solid #eef2f7;margin:16px 0;"></div>'
-
-                + '<a href="' + gcalUrl + '" target="_blank" style="display:block;background:#4285f4;color:white;text-decoration:none;padding:14px;border-radius:11px;font-weight:700;font-size:13px;margin-bottom:10px;font-family:sans-serif;">📅 Add to Google Calendar</a>' + '<button id="icsCloseBtn" style="background:none;border:none;color:#bbb;cursor:pointer;font-size:12px;font-family:sans-serif;margin-top:8px;">Close</button>'
-                + '</div>';
-            document.body.appendChild(popup);
-            document.getElementById('icsCloseBtn').onclick = function() { popup.remove(); };
-
-            // Set date picker to meeting date
-            if (date) document.getElementById('datePicker').value = date;
-        } else {
-            document.getElementById('datePicker').value = new Date().toISOString().split('T')[0];
-        }
+        document.getElementById('datePicker').value = new Date().toISOString().split('T')[0];
         loadDate();
     };
     window.onclick = (e) => { if (!e.target.closest('#context-menu')) hideMenu(); };
